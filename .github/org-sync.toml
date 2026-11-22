@@ -9,7 +9,7 @@ vcpkg_ports = ["swarm-core"]
 citation = true
 # the Zenodo concept record (read from zenodo.org on 2026-11-11, v0.1.0 archived)
 zenodo_concept = "24138628"
-title = "ns3-swarm-core"
+title = "swarm-adapter-ns3"
 module = "swarm-core"
 # the C++ badge: core/'s standard, the one of the ns-3 release swarm-core supports (#141)
 cxx = "23"
@@ -65,11 +65,16 @@ verify commands."""
 build = 'docker run --rm -v "$(CURDIR):/src/swarm-core:ro" $(NS3_IMAGE) ns3-build-contrib swarm-core=/src/swarm-core'
 test = 'docker run --rm -v "$(CURDIR):/src/swarm-core:ro" $(NS3_IMAGE) ns3-build-contrib --strict-warnings --test swarm-core=/src/swarm-core'
 
+
+[docs]
+# the project page keeps its id on the site until the site follows the rename
+# (swarm-routing/swarm-routing.github.io#234; swarm-routing/.github#672)
+arena_id = "ns3-swarm-core"
 [settings]
 # GitHub settings as code: swarm-routing/.github tools/repo-settings (swarm-routing/.github#117).
-description = "swarm-core, the shared ns-3 contrib module every swarm-routing protocol links against: simulator-agnostic C++23 primitives (visited path, little-endian wire helpers, pheromone table, route decision, link metrics) and the ns-3 glue they need."
+description = "swarm-adapter-ns3, the ns-3 adapter of swarm-core's ports: the ns-3 contrib module (still named swarm-core) every swarm-routing protocol links against, SwarmRoutingBase, link monitors, energy hook and deferred queue, with the C++23 primitives until they move to swarm-routing/swarm-core."
 homepage = "https://swarm-routing.github.io/projects/ns3-swarm-core/"
-topics = ["ns-3", "swarm-intelligence", "routing-protocol", "manet", "cpp23", "pheromone", "network-simulation", "library"]
+topics = ["ns-3", "swarm-intelligence", "routing-protocol", "manet", "cpp23", "pheromone", "network-simulation", "library", "ports-and-adapters"]
 ruleset = "protocol"
 required_checks = ["ci / ns-latest debug", "ci / ns-latest sanitized", "ci / format", "ci / headers / licence", "core", "cxx-standard", "check / org-sync", "title / title", "review / coderabbit", "api-surface"]
 # api-surface: the API record (docs/api-surface.txt) is current and nothing in it is removed or
