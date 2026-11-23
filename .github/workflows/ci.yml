@@ -45,7 +45,7 @@ jobs:
         timeout-minutes: 2  # its download and start take seconds (swarm-routing/.github#164)
         with:
           egress-policy: audit
-      - uses: swarm-routing/.github/.github/actions/changes@c4d93afc5ba09c001d18fc553aab3e4065117cbe # main@2026-11-23
+      - uses: swarm-routing/.github/.github/actions/changes@f1d7b404ac831985d7db36a30b5d64d0309f76c8 # main@2026-11-23
         id: changes
         timeout-minutes: 2
         with:
@@ -56,7 +56,7 @@ jobs:
     # report-only; keeps the `python-coverage` artifact the `ci` scan imports,
     # so SonarQube Cloud measures check-api-surface.py and check-cxx-standard.py
     # by their self-tests (swarm-routing/.github#425).
-    uses: swarm-routing/.github/.github/workflows/reusable-python-ci.yml@c4d93afc5ba09c001d18fc553aab3e4065117cbe # main@2026-11-23
+    uses: swarm-routing/.github/.github/workflows/reusable-python-ci.yml@f1d7b404ac831985d7db36a30b5d64d0309f76c8 # main@2026-11-23
     with:
       paths: tools
       tests: tools/checks/tests/test_*.py
@@ -67,7 +67,7 @@ jobs:
     # there must not stop the ns-3 build (the scan then warns: C++ coverage only).
     needs: python-quality
     if: ${{ !cancelled() }}
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@c4d93afc5ba09c001d18fc553aab3e4065117cbe # main@2026-11-23
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-ci.yml@f1d7b404ac831985d7db36a30b5d64d0309f76c8 # main@2026-11-23
     with:
       modules: swarm-core=.
       ns3-versions: ${{ inputs.ns3-versions || '["latest"]' }}
@@ -132,7 +132,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@c4d93afc5ba09c001d18fc553aab3e4065117cbe # main@2026-11-23
+    uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@f1d7b404ac831985d7db36a30b5d64d0309f76c8 # main@2026-11-23
 
   # The core microbenchmarks (core/bench/, #45). On a PR (#170): the base and
   # the head built on the same runner, run interleaved three times each, and
