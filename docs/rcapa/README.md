@@ -1,4 +1,4 @@
-# RCAPA: regressions in a release of swarm-routing/ns3-swarm-core
+# RCAPA: regressions in a release of swarm-routing/swarm-adapter-ns3
 
 An **RCAPA** (root cause analysis with corrective and preventive actions) is
 the full record of one **regression in a published library**: a version of
@@ -31,7 +31,7 @@ fix is an ordinary bug in AntHocNet.
 |---|---|
 | Published as | `v*` releases pinned by the protocols' `swarm-core.lock`, and the `swarm-core` vcpkg port |
 | ID prefix | `SWC-NNN` |
-| Ticket | an issue in swarm-routing/ns3-swarm-core, form *Regression in a release (RCAPA)*, title `[rcapa] SWC-NNN <short description>`, labels `rcapa` and `bug`, opened from the consumer's finding |
+| Ticket | an issue in swarm-routing/swarm-adapter-ns3, form *Regression in a release (RCAPA)*, title `[rcapa] SWC-NNN <short description>`, labels `rcapa` and `bug`, opened from the consumer's finding |
 | Verified by | the consumer's failing check on the new release against the old one; then this repository's gates reproducing it: `core.yml` (ctest at C++23, ASan + UBSan, `tools/checks/check-core-consumer.sh`), `test.py -s swarm-core` in `ci.yml`, the determinism gate (`swarm-core-seed`), `api-surface.yml` for an API change |
 | Corrective action | the fix PR with a test in `core/test/` or `test/` that fails without it (golden rule 13); a breaking API fix follows `docs/api-policy.md`; then a release, the vcpkg port bump and the consumers' lock bumps org-bot opens |
 | Preventive action | the primitive test, glue test or consumer check (`check-core-consumer.sh`, a consumer's canary leg) that would have caught it before the release |

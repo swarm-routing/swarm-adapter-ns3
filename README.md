@@ -1,4 +1,4 @@
-# ns3-swarm-core
+# swarm-adapter-ns3
 
 <!-- org-sync:begin badges -->
 | Group | Badges |
@@ -52,7 +52,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
   set(swarm_core_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
 endif()
 FetchContent_Declare(swarm_core
-  URL https://github.com/swarm-routing/ns3-swarm-core/releases/download/v0.3.0/swarm-core-0.3.0.tar.gz
+  URL https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v0.3.0/swarm-core-0.3.0.tar.gz
   URL_HASH SHA256=<the asset's line in the release's SHA256SUMS>
   ${swarm_core_timestamp}
   SOURCE_SUBDIR core)
@@ -71,12 +71,12 @@ For development against an unreleased swarm-core, a commit instead (the
 
 ```cmake
 FetchContent_Declare(swarm_core
-  GIT_REPOSITORY https://github.com/swarm-routing/ns3-swarm-core.git
+  GIT_REPOSITORY https://github.com/swarm-routing/swarm-adapter-ns3.git
   GIT_TAG <the 40-character commit>
   SOURCE_SUBDIR core)
 ```
 
-With a checkout on disk, `add_subdirectory(/path/to/ns3-swarm-core/core swarm-core)`
+With a checkout on disk, `add_subdirectory(/path/to/swarm-adapter-ns3/core swarm-core)`
 does the same. A file added to `core/` then reaches you with the next release
 (or commit), with no edit on your side; a commit must have
 `core/swarm-core-sources.cmake` (any after v0.1.0's). `core/` is
@@ -116,7 +116,7 @@ subdirectory is `core`):
 
 ```cmake
 FetchContent_Declare(swarm_core
-  URL https://github.com/swarm-routing/ns3-swarm-core/releases/download/v<ver>/swarm-core-<ver>.tar.gz
+  URL https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v<ver>/swarm-core-<ver>.tar.gz
   URL_HASH SHA256=<the tarball's line in the release's SHA256SUMS>
   SOURCE_SUBDIR core)   # add DOWNLOAD_EXTRACT_TIMESTAMP TRUE on CMake 3.24+
 FetchContent_MakeAvailable(swarm_core)

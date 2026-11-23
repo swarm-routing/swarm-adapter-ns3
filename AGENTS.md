@@ -1,6 +1,6 @@
 # AGENTS.md — guide for AI coding agents
 
-Operational guide for LLM agents working in `swarm-routing/ns3-swarm-core`. Read this
+Operational guide for LLM agents working in `swarm-routing/swarm-adapter-ns3`. Read this
 before changing anything. Org-wide conventions:
 [`swarm-routing/.github` CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md). Shape and rules mirror
 [AntHocNet's AGENTS.md](https://github.com/swarm-routing/AntHocNet/blob/main/AGENTS.md), the source repository.
@@ -86,7 +86,7 @@ tools/release/      dist.sh: the release asset (swarm-core-<ver>.tar.gz), checke
 .github/workflows/  ci.yml (reusable-ns3-ci: strict warnings, coverage, determinism, format, headers; `cxx-standard`:
                     tools/checks/check-cxx-standard.py, core/'s standard against the image's ns-3 minimum, #141), core.yml (check `core`:
                     core/ alone at C++23, strict warnings, ctest, again under ASan + UBSan, the consumer check; #99), pr-title.yml,
-                    release.yml (the org reusable-release.yml, then the ns3-swarm-core image), api-surface.yml (check
+                    release.yml (the org reusable-release.yml, then the swarm-adapter-ns3 image), api-surface.yml (check
                     `api-surface`: the API record is current and nothing in it removed without a breaking mark;
                     a required check since the v1.0.0 freeze, #83)
 ```

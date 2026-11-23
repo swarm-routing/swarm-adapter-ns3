@@ -5,7 +5,7 @@ The swarm-core primitives (this directory, core/) are dual-licensed:
 You may use, copy, modify and distribute them under the terms of EITHER the MIT
 License below OR the GNU General Public License version 2 only, at your choice.
 The GPL-2.0 text is the LICENSE file at the root of this repository
-(https://github.com/swarm-routing/ns3-swarm-core/blob/main/LICENSE).
+(https://github.com/swarm-routing/swarm-adapter-ns3/blob/main/LICENSE).
 
 core/ includes only the C++ standard library and other core/ files, never a
 simulator header, so it can be used on its own: in another simulator, a routing

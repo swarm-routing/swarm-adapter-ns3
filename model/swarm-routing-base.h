@@ -355,7 +355,7 @@ protected:
     /// the adapter put on it stays on: an adapter that overrides RouteInput
     /// (Termite's, whose header rides on every data packet) holds its packets
     /// here too. ReleaseDeferred hands it, unchanged, to SelectNextHop,
-    /// OnDataForwarded and ForwardData (swarm-routing/ns3-swarm-core#40).
+    /// OnDataForwarded and ForwardData (swarm-routing/swarm-adapter-ns3#40).
     void Defer(Ptr<const Packet> p, const Ipv4Header& header, const UnicastForwardCallback& ucb,
                const ErrorCallback& ecb);
     /// The same, in hold class `holdClass` instead of HoldClassFor's (#126):

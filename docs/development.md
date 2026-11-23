@@ -1,6 +1,6 @@
 # Developer guide
 
-ns3-swarm-core is the shared ns-3 contrib module `swarm-core` that every
+swarm-adapter-ns3 is the shared ns-3 contrib module `swarm-core` that every
 swarm-routing protocol builds on. It has two halves: `core/`, plain C++23
 primitives that build and test without any simulator, and the ns-3 glue in
 `model/`, `helper/` and `test/`, which builds inside an ns-3 tree. This page
@@ -27,8 +27,8 @@ CMake 3.28, Python 3.12), which `make` pulls on first use.
 ## Get the code
 
 ```bash
-git clone https://github.com/swarm-routing/ns3-swarm-core.git
-cd ns3-swarm-core
+git clone https://github.com/swarm-routing/swarm-adapter-ns3.git
+cd swarm-adapter-ns3
 ```
 
 There are no submodules. To propose a change from outside the org, fork the
@@ -122,7 +122,9 @@ this checkout at `/src`; ns-3 is at `/opt/ns-3` and `ns3-build-contrib
 in swarm-routing/ns3-containers ("Which image").
 
 There is no `.devcontainer/` yet; a release also publishes this module
-prebuilt as the image `ghcr.io/swarm-routing/ns3-swarm-core:<tag>`.
+prebuilt as the image `ghcr.io/swarm-routing/swarm-adapter-ns3:<tag>` (releases
+up to v1.0.0: `ns3-swarm-core:<tag>`, deprecated and deleted once the
+swarm-core migration completes, #255).
 
 ## Lint and format
 
@@ -159,7 +161,7 @@ runs lint, the ns-3 test, the headers and the org-sync check together.
 | `dco.yml`, `scorecard.yml`, `sync-labels.yml` | | sign-off on outside contributions; OpenSSF Scorecard; labels | no |
 
 The required checks are the ones the `main` ruleset lists: `gh api
-repos/swarm-routing/ns3-swarm-core/rules/branches/main`. `main` merges
+repos/swarm-routing/swarm-adapter-ns3/rules/branches/main`. `main` merges
 through a merge queue, so a pull request is merged by enabling auto-merge.
 
 ## Release
@@ -168,7 +170,7 @@ Releases follow the org procedure: [CONTRIBUTING "Cutting a release"](https://gi
 Here, `release.yml` is dispatched with `dry-run`, then `bump`; merging the
 bot's `chore(release): bump version A to B` PR tags the version and
 publishes the asset `swarm-core-<ver>.tar.gz` (built by `make dist`; `DIST_CHECK=0`
-skips its checks), the image `ns3-swarm-core:<tag>` and a vcpkg port bump.
+skips its checks), the image `swarm-adapter-ns3:<tag>` and a vcpkg port bump.
 A dry run also builds the consumers in `.github/downstream.txt` against the
 candidate. What counts as a breaking change is in
 [docs/api-policy.md](api-policy.md).
