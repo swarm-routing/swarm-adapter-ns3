@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Daniel Joppi (https://github.com/swarm-routing)
 # SPDX-License-Identifier: MIT OR GPL-2.0-only
-"""core/ keeps up with the C++ standard of the ns-3 release swarm-core supports.
+"""swarm-core's core/ keeps up with the C++ standard of the ns-3 release it supports.
 
-    check-cxx-standard.py [--ns3 /opt/ns-3] [core/CMakeLists.txt]
+    check-cxx-standard.py [--ns3 /opt/ns-3] <swarm-core>/core/CMakeLists.txt
     check-cxx-standard.py --self-test
+
+The core/ checked is the one of the swarm-core release this module builds on
+(swarm-core.lock; ci.yml's `cxx-standard` job unpacks it): every module that
+links ${libswarm-core} inherits its standard (#231).
 
 The rule (docs/api-policy.md "C++ standard", #141): core/ targets the standard
 ns-3 itself requires, its CMAKE_CXX_STANDARD_MINIMUM in
@@ -131,14 +135,7 @@ def self_test() -> int:
         if got != want:
             print(f"self-test FAIL: {name}: exit {got}, want {want}", file=sys.stderr)
             failed += 1
-    # The real file passes against a C++23 ns-3.
-    real = Path(__file__).resolve().parents[2] / "core" / "CMakeLists.txt"
-    with tempfile.TemporaryDirectory() as d:
-        ns3, _ = tree(Path(d), "23", "")
-        if check(ns3, real) != 0:
-            print("self-test FAIL: core/CMakeLists.txt against ns-3 C++23", file=sys.stderr)
-            failed += 1
-    print(f"check-cxx-standard self-test: {len(cases) + 1 - failed}/{len(cases) + 1} passed")
+    print(f"check-cxx-standard self-test: {len(cases) - failed}/{len(cases)} passed")
     return 1 if failed else 0
 
 
@@ -148,13 +145,10 @@ def main(argv: list[str]) -> int:
     ns3 = Path("/opt/ns-3")
     if argv[:1] == ["--ns3"] and len(argv) >= 2:
         ns3, argv = Path(argv[1]), argv[2:]
-    if len(argv) > 1 or (argv and argv[0].startswith("-")):
+    if len(argv) != 1 or argv[0].startswith("-"):
         print(__doc__, file=sys.stderr)
         return 2
-    cmakelists = (
-        Path(argv[0]) if argv else Path(__file__).resolve().parents[2] / "core" / "CMakeLists.txt"
-    )
-    return check(ns3, cmakelists)
+    return check(ns3, Path(argv[0]))
 
 
 if __name__ == "__main__":

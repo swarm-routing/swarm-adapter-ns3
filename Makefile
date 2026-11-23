@@ -13,7 +13,7 @@ DOCKERFILE ?= Dockerfile
 BUILD_ARGS ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools core-test dist api-surface
+.PHONY: help build test lint format check clean shell ci headers org-sync-check org-tools dist api-surface
 
 help: ## list the targets
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -38,18 +38,15 @@ shell: ## an interactive shell in the dev image with this repo at /src
 	docker run --rm -it -v "$(CURDIR):/src" -w /src $(if $(PLATFORM),--platform $(PLATFORM)) $(NS3_IMAGE) bash
 
 headers: org-tools ## licence headers (org rule 1)
-	"$(ORG_DIR)/tools/checks/check-headers.sh" --dual core/ --dual tools/ --core core/ --exclude '^core/bench/' .
+	"$(ORG_DIR)/tools/checks/check-headers.sh" --dual tools/ .
 
 check: lint test headers org-sync-check ## everything CI gates on
 
 ci: check ## exactly what CI runs
 
-core-test: ## core/ alone, no ns-3: plain CMake + ctest with CI's strict warnings
-	cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core --output-on-failure
-
 # The release asset (epic #6) for swarm-routing/.github's reusable-release.yml,
 # which sets RELEASE_VERSION; locally it defaults to VERSION. DIST_CHECK=0
-# skips the check (the tarball's suite in NS3_IMAGE, core/ alone).
+# skips the check (the tarball's suite in NS3_IMAGE).
 RELEASE_VERSION ?= $(shell cat VERSION)
 dist: ## the release asset in dist/: the swarm-core module tarball, checked
 	NS3_IMAGE=$(NS3_IMAGE) tools/release/dist.sh $(RELEASE_VERSION) dist
