@@ -66,7 +66,7 @@
   "build_floss_tools_status": "Met",
   "build_floss_tools_justification": "Builds with FLOSS tools only (make, GCC/Clang, Python): https://github.com/swarm-routing/swarm-adapter-ns3/blob/main/Makefile.",
   "test_status": "Met",
-  "test_justification": "An automated test suite: https://github.com/swarm-routing/swarm-adapter-ns3/tree/main/core/test.",
+  "test_justification": "An automated test suite: https://github.com/swarm-routing/swarm-adapter-ns3/tree/main/test.",
   "test_invocation_status": "Met",
   "test_invocation_justification": "Run with `make test`: https://github.com/swarm-routing/swarm-adapter-ns3/blob/main/Makefile.",
   "test_most_status": "?",
