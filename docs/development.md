@@ -1,6 +1,6 @@
 # Developer guide
 
-ns3-swarm-core is the shared ns-3 contrib module `swarm-core` that every
+swarm-adapter-ns3 is the shared ns-3 contrib module `swarm-core` that every
 swarm-routing protocol builds on. It has two halves: `core/`, plain C++23
 primitives that build and test without any simulator, and the ns-3 glue in
 `model/`, `helper/` and `test/`, which builds inside an ns-3 tree. This page
@@ -27,8 +27,8 @@ CMake 3.28, Python 3.12), which `make` pulls on first use.
 ## Get the code
 
 ```bash
-git clone https://github.com/swarm-routing/ns3-swarm-core.git
-cd ns3-swarm-core
+git clone https://github.com/swarm-routing/swarm-adapter-ns3.git
+cd swarm-adapter-ns3
 ```
 
 There are no submodules. To propose a change from outside the org, fork the
@@ -159,7 +159,7 @@ runs lint, the ns-3 test, the headers and the org-sync check together.
 | `dco.yml`, `scorecard.yml`, `sync-labels.yml` | | sign-off on outside contributions; OpenSSF Scorecard; labels | no |
 
 The required checks are the ones the `main` ruleset lists: `gh api
-repos/swarm-routing/ns3-swarm-core/rules/branches/main`. `main` merges
+repos/swarm-routing/swarm-adapter-ns3/rules/branches/main`. `main` merges
 through a merge queue, so a pull request is merged by enabling auto-merge.
 
 ## Release

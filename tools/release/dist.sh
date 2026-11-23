@@ -44,7 +44,7 @@ git -C "$repo" ls-files -z -- CMakeLists.txt core helper model test examples doc
         README.md LICENSE LICENSE-MIT LICENSING.md VERSION |
     (cd "$repo" && xargs -0 cp --parents -t "$pkg")
 cat > "$pkg/INSTALL.txt" <<TXT
-swarm-core $ver (swarm-routing/ns3-swarm-core): the shared ns-3 contrib
+swarm-core $ver (swarm-routing/swarm-adapter-ns3): the shared ns-3 contrib
 module every swarm-routing protocol links against. core/ is MIT OR
 GPL-2.0-only (core/LICENSE); the rest is GPL-2.0-only (LICENSING.md).
 Needs ns-3.42 or later; core/ targets C++23, the standard of the ns-3
@@ -67,7 +67,7 @@ and installed as the CMake package swarm-core, for find_package:
   #   find_package(swarm-core $ver CONFIG REQUIRED)
   #   target_link_libraries(my_core PUBLIC swarm::core)
 
-Source: https://github.com/swarm-routing/ns3-swarm-core/tree/v$ver
+Source: https://github.com/swarm-routing/swarm-adapter-ns3/tree/v$ver
 TXT
 tar --sort=name --owner=0 --group=0 --numeric-owner --mtime="@${epoch}" \
     -C "$tmp/pkg" -cf - swarm-core | gzip -n > "$out/swarm-core-$ver.tar.gz"

@@ -1,6 +1,6 @@
 # Licensing
 
-`swarm-routing/ns3-swarm-core` is licensed per directory, under the same rules as
+`swarm-routing/swarm-adapter-ns3` is licensed per directory, under the same rules as
 [AntHocNet](https://github.com/swarm-routing/AntHocNet/blob/main/LICENSING.md), the source repository
 ([ADR-0028](https://github.com/swarm-routing/AntHocNet/blob/main/docs/adr/0028-core-is-dual-licensed.md)):
 
