@@ -24,11 +24,14 @@ build: ## build what this repo ships
 test: ## the fast tests CI runs on every PR
 	docker run --rm -v "$(CURDIR):/src/swarm-core:ro" $(NS3_IMAGE) ns3-build-contrib --strict-warnings --test swarm-core=/src/swarm-core
 
-lint: ## static checks, no changes
-	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format --dry-run --Werror
+# The org .clang-format unless this repo ships its own, as CI's format check.
+CLANG_STYLE = $(if $(wildcard .clang-format),file,file:$(ORG_DIR)/.clang-format)
 
-format: ## apply the formatters
-	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format -i
+lint: org-tools ## static checks, no changes
+	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format-18 --style=$(CLANG_STYLE) --dry-run --Werror
+
+format: org-tools ## apply the formatters
+	git ls-files "*.h" "*.cc" "*.cpp" "*.hpp" | xargs -r clang-format-18 --style=$(CLANG_STYLE) -i
 
 clean: ## remove build outputs
 	rm -rf build dist
