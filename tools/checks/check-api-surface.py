@@ -3,26 +3,31 @@
 # SPDX-License-Identifier: MIT OR GPL-2.0-only
 """The public API of swarm-core as a committed, generated record, and its guard.
 
-    check-api-surface.py generate (--ns3-image IMAGE | --ns3-include DIR) [-o docs/api-surface.txt]
-    check-api-surface.py check (--ns3-image IMAGE | --ns3-include DIR) [--base-snapshot FILE]
-                               [--title TITLE] [--body-file FILE] [--strict]
+    check-api-surface.py generate (--ns3-image IMAGE | --ns3-include DIR) [--swarm-core-dir DIR]
+                                  [-o docs/api-surface.txt]
+    check-api-surface.py check (--ns3-image IMAGE | --ns3-include DIR) [--swarm-core-dir DIR]
+                               [--base-snapshot FILE] [--title TITLE] [--body-file FILE] [--strict]
     check-api-surface.py --self-test
     check-api-surface.py --clang-version
 
 `docs/api-surface.txt` lists every item of the API `docs/api-policy.md` "What
 the API is" defines, one per line, sorted:
 
-  - `core`: every name in namespace `swarm::core` (and `swarm::core::testbench`)
-    declared by the headers of `core/swarm-core-sources.cmake`
-    (`SWARM_CORE_HEADERS`, `SWARM_CORE_TESTBENCH_HEADERS`): classes and their
-    public bases, public and protected members with their types, functions
-    with their signatures and default arguments, enumerators with their values,
-    constants with their initialisers, aliases. Namespaces `test` and
-    `detail`, unnamed namespaces and private members are not API and are left
-    out.
-  - `ns3`: the same for namespace `ns3` in the headers the module installs
-    from `model/` and `helper/` (`HEADER_FILES` in `CMakeLists.txt`), which
-    includes `kSwarmCoreApiVersion`.
+  - `ns3`: every name in namespace `ns3` declared by the headers the module
+    installs from `model/` and `helper/` (`HEADER_FILES` in `CMakeLists.txt`),
+    which includes `kSwarmCoreApiVersion`: classes and their public bases,
+    public and protected members with their types, functions with their
+    signatures and default arguments, enumerators with their values, constants
+    with their initialisers, aliases. Namespaces `test` and `detail`, unnamed
+    namespaces and private members are not API and are left out.
+
+swarm-core's primitives (namespace `swarm::core`) are not in this record
+(#231): the module builds on the swarm-core release `swarm-core.lock` names,
+and swarm-routing/swarm-core records them in its own `docs/api-surface.txt`.
+The module's headers include them, so the generator needs that release's
+`core/`: by default it downloads the lock's tarball and checks its SHA256;
+`--swarm-core-dir` names a `core/` directory instead (offline, or an
+unreleased swarm-core).
   - `typeid`, `attribute`, `trace`: every `TypeId` the module registers
     (`GetTypeId` in `model/*.cc`, `helper/*.cc`): its name, parent, group and
     constructor; each attribute's name, flags, initial value and checker; each
@@ -35,8 +40,7 @@ not change with the machine; `api-surface.yml` installs it from apt
 (`--clang-version` prints it) and `CLANG` overrides it. `--self-test`'s fake
 headers do not depend on the version, so it takes the pinned clang if present
 and otherwise the newest `clang++-N` (or `clang++`) on PATH. One translation
-unit with every `core/` header alone, one with every module header on an ns-3
-tree. `--ns3-image` copies that tree's headers out of an `ns3-dev` image with
+unit with every module header on an ns-3 tree and swarm-core's `core/`. `--ns3-image` copies that tree's headers out of an `ns3-dev` image with
 docker; `--ns3-include` names an ns-3 `build/include` directly (inside the
 image, `/opt/ns-3/build/include`).
 
@@ -59,6 +63,7 @@ finding. Exit 2 when the generator itself cannot run.
 import argparse
 import contextlib
 import difflib
+import hashlib
 import io
 import json
 import os
@@ -66,7 +71,9 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
+import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -127,6 +134,7 @@ def cmake_list(text: str, name: str) -> list[str]:
 def module_files(repo: Path, keyword: str, suffix: str) -> list[str]:
     """The model/ and helper/ files of build_lib's KEYWORD section in CMakeLists.txt."""
     text = (repo / "CMakeLists.txt").read_text()
+    text = text[text.find("build_lib(") :]  # not a keyword named in a comment above it
     m = re.search(keyword + r"\s+(.*?)(?=\n\s*[A-Z_]{4,}\s|\))", text, re.S)
     if not m:
         raise SurfaceError(f"CMakeLists.txt: no {keyword}")
@@ -135,9 +143,51 @@ def module_files(repo: Path, keyword: str, suffix: str) -> list[str]:
     ]
 
 
-def core_headers(repo: Path) -> list[str]:
-    text = (repo / "core" / "swarm-core-sources.cmake").read_text()
-    return cmake_list(text, "SWARM_CORE_HEADERS") + cmake_list(text, "SWARM_CORE_TESTBENCH_HEADERS")
+def core_headers(core: Path) -> list[str]:
+    """The headers swarm-core's core/ (CORE) exports, which the module re-exports as ns3/<name>.h."""
+    return cmake_list((core / "swarm-core-sources.cmake").read_text(), "SWARM_CORE_HEADERS")
+
+
+LOCK = "swarm-core.lock"
+RELEASE_URL = "https://github.com/{repo}/releases/download/{tag}/{asset}"
+
+
+def read_lock(path: Path) -> dict[str, str]:
+    vals = {}
+    for line in path.read_text().splitlines():
+        m = re.match(r"^SWARM_CORE_([A-Z0-9_]+)=(\S+)\s*$", line)
+        if m:
+            vals[m.group(1)] = m.group(2)
+    for k in ("REPO", "TAG", "ASSET", "SHA256"):
+        if k not in vals:
+            raise SurfaceError(f"{path}: no SWARM_CORE_{k}")
+    return vals
+
+
+def swarm_core_from_lock(repo: Path, work: Path) -> Path:
+    """swarm-core's core/ at the release the lock names: the tarball, checked by its SHA256."""
+    lk = read_lock(repo / LOCK)
+    url = RELEASE_URL.format(repo=lk["REPO"], tag=lk["TAG"], asset=lk["ASSET"])
+    arc = work / lk["ASSET"]
+    with urllib.request.urlopen(url, timeout=120) as r, arc.open("wb") as f:  # noqa: S310 (https)
+        shutil.copyfileobj(r, f)
+    got = hashlib.sha256(arc.read_bytes()).hexdigest()
+    if got != lk["SHA256"]:
+        raise SurfaceError(f"{lk['ASSET']} has SHA256 {got}, {LOCK} says {lk['SHA256']}")
+    dest = work / "swarm-core-release"
+    with tarfile.open(arc, "r:gz") as tar:
+        members = [
+            m
+            for m in tar.getmembers()
+            if (m.isfile() or m.isdir())
+            and not m.name.startswith("/")
+            and ".." not in m.name.split("/")
+        ]
+        tar.extractall(dest, members=members, filter="data")
+    cores = [p.parent for p in dest.glob("*/core/swarm-core-sources.cmake")]
+    if len(cores) != 1:
+        raise SurfaceError(f"{lk['ASSET']} holds no single <top>/core/")
+    return cores[0]
 
 
 # --- clang's JSON AST, streamed -------------------------------------------------
@@ -522,22 +572,38 @@ def source(work: Path, f: str) -> bytes:
         return b""
 
 
-def cxx_surface(repo: Path, include: Path | None, work: Path, pinned: bool = True) -> set[str]:
+def clang_base(pinned: bool = True) -> list[str]:
     clang = clang_binary(pinned)
+    return [clang, "-x", "c++", "-std=c++23", "-fsyntax-only", "-Xclang", "-ast-dump=json"]
+
+
+def core_surface(core: Path, work: Path, pinned: bool = True) -> set[str]:
+    """The `core` lines of swarm-core's own record (its docs/api-surface.txt):
+    not part of this record, which keeps the ns-3 items only (#231); the
+    self-test runs the walker on them."""
     out: set[str] = set()
-    base = [clang, "-x", "c++", "-std=c++23", "-fsyntax-only", "-Xclang", "-ast-dump=json"]
-    # core/ alone: every public header, no ns-3.
     tu = work / "core-tu.cc"
-    tu.write_text("".join(f'#include "{h}"\n' for h in core_headers(repo)))
-    for f, ns in top_level_namespaces(base + ["-I", str(repo / "core"), str(tu)], work, {"swarm"}):
+    text = (core / "swarm-core-sources.cmake").read_text()
+    headers = core_headers(core) + cmake_list(text, "SWARM_CORE_TESTBENCH_HEADERS")
+    tu.write_text("".join(f'#include "{h}"\n' for h in headers))
+    for f, ns in top_level_namespaces(
+        clang_base(pinned) + ["-I", str(core), str(tu)], work, {"swarm"}
+    ):
         walk("core", "swarm", ns.get("inner", []), "", out, source(work, f))
-    if include is None:
-        return out
-    # the module's headers, as a consumer includes them: ns3/<name>.h.
+    return out
+
+
+def cxx_surface(repo: Path, include: Path, core: Path, work: Path, pinned: bool = True) -> set[str]:
+    """The module's own headers (namespace ns3), as a consumer includes them:
+    ns3/<name>.h, on an ns-3 tree (INCLUDE) and swarm-core's core/ (CORE), whose
+    headers the module re-exports as ns3/<name>.h; their items are swarm-core's
+    record, not this one."""
+    out: set[str] = set()
+    base = clang_base(pinned)
     staged = work / "inc" / "ns3"
-    (staged / "testbench").mkdir(parents=True, exist_ok=True)
-    for h in core_headers(repo):
-        (staged / h).symlink_to(repo / "core" / h)
+    staged.mkdir(parents=True, exist_ok=True)
+    for h in core_headers(core):
+        (staged / h).symlink_to(core / h)
     ours = module_files(repo, "HEADER_FILES", ".h")
     for h in ours:
         (staged / Path(h).name).symlink_to(repo / h)
@@ -740,8 +806,8 @@ def ns3_include_from_image(image: str, work: Path) -> Path:
     return include
 
 
-def generate(repo: Path, include: Path | None, work: Path, pinned: bool = True) -> str:
-    lines = sorted(cxx_surface(repo, include, work, pinned) | typeid_surface(repo))
+def generate(repo: Path, include: Path, core: Path, work: Path, pinned: bool = True) -> str:
+    lines = sorted(cxx_surface(repo, include, core, work, pinned) | typeid_surface(repo))
     return HEADER + "".join(line + "\n" for line in lines)
 
 
@@ -826,6 +892,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--body-file", type=Path)
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--repo", type=Path, default=REPO)
+    ap.add_argument(
+        "--swarm-core-dir",
+        type=Path,
+        help="swarm-core's core/ directory (default: the release swarm-core.lock names, downloaded)",
+    )
     args = ap.parse_args(argv)
     try:
         with tempfile.TemporaryDirectory() as tmp:
@@ -835,8 +906,13 @@ def main(argv: list[str]) -> int:
                 if args.ns3_include
                 else ns3_include_from_image(args.ns3_image, work)
             )
-            text = generate(args.repo.resolve(), include, work)
-    except (SurfaceError, OSError, subprocess.CalledProcessError) as e:
+            core = (
+                args.swarm_core_dir.resolve()
+                if args.swarm_core_dir
+                else swarm_core_from_lock(args.repo.resolve(), work)
+            )
+            text = generate(args.repo.resolve(), include, core, work)
+    except (SurfaceError, OSError, tarfile.TarError, subprocess.CalledProcessError) as e:
         print(f"check-api-surface: {e}", file=sys.stderr)
         return 2
     if args.mode == "generate":
@@ -944,12 +1020,14 @@ def make_fake(root: Path) -> None:
     (root / "model").mkdir()
     (root / "core" / "swarm-fake.h").write_text(FAKE_CORE)
     (root / "core" / "testbench" / "swarm-testbench.h").write_text(FAKE_TESTBENCH)
+    # a fake swarm-core core/, as the release unpacks it
     (root / "core" / "swarm-core-sources.cmake").write_text(
         "set(SWARM_CORE_SOURCES\n)\nset(SWARM_CORE_HEADERS\n  swarm-fake.h  # one\n)\n"
         "set(SWARM_CORE_TESTBENCH_HEADERS\n  testbench/swarm-testbench.h\n)\n"
     )
+    # the module: swarm-core's headers re-exported, by the release's directory
     (root / "CMakeLists.txt").write_text(
-        "build_lib(\n  LIBNAME swarm-core\n  SOURCE_FILES\n    ${SWARM_CORE_SOURCES}\n    model/swarm-monitor.cc\n"
+        "build_lib(\n  LIBNAME swarm-core\n  SOURCE_FILES\n    model/swarm-monitor.cc\n"
         "  HEADER_FILES\n    ${SWARM_CORE_HEADERS}\n    model/swarm-monitor.h\n  LIBRARIES_TO_LINK ${libcore}\n)\n"
     )
     (root / "model" / "swarm-monitor.h").write_text(FAKE_MODEL_H)
@@ -1022,8 +1100,15 @@ def self_test() -> int:
         clang = clang_binary(pinned=False)
         if clang != shutil.which(f"clang++-{CLANG_VERSION}") and not os.environ.get("CLANG"):
             print(f"check-api-surface: no clang++-{CLANG_VERSION}, self-test under {clang}")
-        text = generate(root, root / "ns3inc", work, pinned=False)
-        got = set(items(text))
+        generated = generate(root, root / "ns3inc", root / "core", work, pinned=False)
+        assert not any(x.startswith("core ") for x in items(generated)), (
+            "swarm-core's items are its own record's, not this one's"
+        )
+        # The walker on swarm-core's headers too (core_surface): the same rules.
+        core_work = Path(tmp) / "core-work"
+        core_work.mkdir()
+        got = set(items(generated)) | core_surface(root / "core", core_work, pinned=False)
+        text = HEADER + "".join(f"{x}\n" for x in sorted(got))
         expect = {
             "core enum class swarm::core::Kind : std::uint8_t",
             "core enumerator swarm::core::Kind::kA = 0",
@@ -1079,7 +1164,18 @@ def self_test() -> int:
         # determinism: the same sources give the same bytes
         work2 = Path(tmp) / "work2"
         work2.mkdir()
-        assert generate(root, root / "ns3inc", work2, pinned=False) == text
+        assert generate(root, root / "ns3inc", root / "core", work2, pinned=False) == generated
+        # the lock: its keys read, a missing one refused
+        (root / LOCK).write_text(
+            "# comment\nSWARM_CORE_REPO=o/r\nSWARM_CORE_TAG=v1.2.3\nSWARM_CORE_ASSET=a.tar.gz\nSWARM_CORE_SHA256=ab\n"
+        )
+        assert read_lock(root / LOCK)["TAG"] == "v1.2.3"
+        (root / LOCK).write_text("SWARM_CORE_REPO=o/r\n")
+        try:
+            read_lock(root / LOCK)
+            raise AssertionError("a lock without a tag must fail")
+        except SurfaceError:
+            pass
         # the check
         assert findings(text, text, text, "feat: x", "") == []
         added = text + "core function swarm::core::new_fn: int ()\n"

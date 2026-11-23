@@ -9,7 +9,9 @@ so a piece with fewer than two users is visible before v1.0.0 freezes the API
 `ns3/`; tests and benchmarks not counted). AntHocNet is being ported onto
 swarm-core step by step (swarm-routing/AntHocNet#1019, #14): a step name (S4,
 S5, …) marks a piece it adopts in that step; until then it keeps its own copy.
-Update this table in the PR that changes a piece's users.
+Update this table in the PR that changes a piece's users. The `core/` paths
+below are swarm-routing/swarm-core's since #231 (the primitives' home); this
+module passes them on to every module that links `${libswarm-core}`.
 
 | Piece | What it is for | ARA | BeeAdHoc | Termite | HOPNET | AntHocNet |
 |---|---|---|---|---|---|---|

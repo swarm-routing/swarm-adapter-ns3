@@ -8,16 +8,16 @@ name: Release
 #   dispatch `bump`     open the PR `chore(release): bump version A to B`
 #                       from bot/release (Commitizen, .cz.toml);
 #   merge that PR       the release: `make dist` builds and checks the asset
-#                       (swarm-core-<ver>.tar.gz; tools/release/dist.sh), then
+#                       (swarm-core-<ver>.tar.gz, the ns-3 module;
+#                       tools/release/dist.sh), then
 #                       SBOM, checksums, signed provenance, the v<ver> tag and
 #                       the GitHub release.
 # The `image` job then publishes ghcr.io/swarm-routing/swarm-adapter-ns3:v<ver>-{optimized,debug}
 # (named after the repository, swarm-routing/.github#370; v0.3.0 to v1.0.0 are in
 # ns3-swarm-core and v0.1.0, v0.2.0 in ns3-swarm-core-ns3, both deprecated and
 # frozen, deleted once the swarm-core migration completes: #255)
-# with the module built in (CONTRIBUTING "Images"). After the publish, the
-# reusable release's `vcpkg` job opens the `swarm-core` port bump PR in
-# swarm-routing/vcpkg-registry (vcpkg-ports, swarm-routing/.github#439).
+# with the module built in (CONTRIBUTING "Images"). The `swarm-core` vcpkg
+# port follows swarm-routing/swarm-core's releases, not this module's (#231).
 # A dry run also builds and tests swarm-core's consumers (the four protocols
 # and AntHocNet, .github/downstream.txt) against the commit, report-only
 # (`downstream-consumers`, swarm-routing/.github#482).
@@ -57,7 +57,6 @@ jobs:
       mode: ${{ inputs.mode }}   # empty on push: release
       increment: ${{ inputs.increment != 'auto' && inputs.increment || '' }}  # '' on push and for auto (swarm-routing/.github#211)
       tag: ${{ inputs.tag }}   # release-notes only; '' on push (swarm-routing/.github#524)
-      vcpkg-ports: swarm-core   # after publish, the org bot opens the port bump PR in swarm-routing/vcpkg-registry (#135)
       # a dry run builds the protocols and AntHocNet against this commit,
       # report-only (.github/downstream.txt, swarm-routing/.github#482)
       downstream-consumers: .github/downstream.txt

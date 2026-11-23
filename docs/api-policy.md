@@ -21,16 +21,14 @@ swarm-core's sources:
 
 | Part | What is covered |
 |---|---|
-| `core/` public headers | Every header in `core/swarm-core-sources.cmake` (`SWARM_CORE_HEADERS`): the names in namespace `swarm::core`, their signatures, the ports' virtual functions, and the documented behaviour of each primitive (the comments in the header are its contract). This includes the byte layout `WireWriter` / `WireReader` produce (little-endian, the version byte first). |
-| `core/testbench/` | The header in `SWARM_CORE_TESTBENCH_HEADERS` (#15), which protocol repositories' core tests include: the names in namespace `swarm::core::testbench` (`EventQueue`, `Rng`, `Topology`, `Network`, `NodePorts`, `INodeAdapter`, `NetworkConfig`, `TraceRecord`), their signatures and documented behaviour, including that one seed and script give one trace and digest. The digest's value itself is not API: a later version may order an event differently, so a consumer compares two runs of the same build, never a stored digest. |
-| `core/` as a CMake project | The target `swarm_core` and its alias `swarm::core`, consumed with `add_subdirectory` or `FetchContent` with `SOURCE_SUBDIR core` (README "Use core/ from another CMake project"): as a subproject it adds that target only, with no test target and no `-Werror` on the consumer. Installed, the CMake package `swarm-core` (#133): `find_package(swarm-core CONFIG)` gives the imported target `swarm::core`, the headers under `include/swarm-core/` (`testbench/` included), and the package version is the release's, compatible within its major from 1.0 (`SameMajorVersion`; before 1.0 within its minor). The options `SWARM_CORE_TESTS`, `SWARM_CORE_SANITIZE`, `SWARM_CORE_BENCH` and `SWARM_CORE_INSTALL` keep their names and meaning. |
+| swarm-core's primitives | Since #231 not this module's own: swarm-routing/swarm-core's `core/` (namespace `swarm::core`, the testbench, the target `swarm::core` and the CMake package `swarm-core`) is that repository's API, under its own policy and record. This module builds on the release `swarm-core.lock` names and promises what it passes on: `swarm::core` linked `PUBLIC` to `libswarm-core` (its objects, include directory and `cxx_std_23` reach every module that links it), and each header in that release's `SWARM_CORE_HEADERS` exported as `ns3/<name>.h` and included by `ns3/swarm-core-module.h`. A lock bump to a swarm-core release that breaks its API is a breaking change here too. |
 | `model/` public classes | Every header the ns-3 module installs (`HEADER_FILES` in `CMakeLists.txt`): the public and **protected** members of each class (an adapter derives from `SwarmRoutingBase`, so its protected hooks and services are API), every `TypeId` name, every attribute (name, value type, default and what the default means) and every trace source (name and callback signature). |
 | `helper/` | `SwarmRoutingHelper`, `SwarmMonitorHelper`, `SwarmLifecycleHelper` and the structures they return (`SwarmRoutingStats`, ...). |
 | The module itself | The contrib module name `swarm-core`, the umbrella header `ns3/swarm-core-module.h`, `SwarmCoreSeed` and `kSwarmCoreApiVersion` (below). |
 | Default output | With every new option at its default, the same seed gives the same bytes (org invariant 5): a consumer's `##RUN##` lines do not move because swarm-core was updated, except by a bug fix, which follows the Patch rule below. |
 
-The comments in `model/swarm-routing-base.h` are the base's contract, as the
-`core/` headers' comments are the primitives'. One rule there is easy to miss,
+The comments in `model/swarm-routing-base.h` are the base's contract, as
+swarm-core's headers' comments are the primitives'. One rule there is easy to miss,
 because the CI smokes are too short to show it (#192): **control packets go
 one hop.** Every control socket the base opens sends with IP TTL 1
 (`NotifyInterfaceUp`), so `BroadcastControl`, `BroadcastControlOn`,
@@ -46,8 +44,7 @@ change; a routed control send beside it would be a minor, added only once a
 second protocol needs one (golden rule 11; maintainer decision 2026-11-16 on
 #192).
 
-Not API, and free to change in any release: namespace
-`swarm::core::test`, `core/test/`, `core/bench/`, private members, log output
+Not API, and free to change in any release: private members, log output
 (`NS_LOG`), the file layout beyond the headers listed above, `tools/`, CI
 workflows, timings and memory use (a performance change is never breaking,
 but one that changes default output on purpose is, as above). The promise
@@ -57,18 +54,32 @@ release unchanged, with deprecation warnings not treated as errors
 (ABI) compatibility is not promised; every consumer compiles swarm-core from
 source.
 
+**v2.0.0 (proposed, #231) moves `core/` out.** The primitives come from
+swarm-routing/swarm-core's release instead of this repository's `core/`; their
+names, signatures and headers (`ns3/swarm-*.h` included) are unchanged at
+swarm-core v2.0.0, which was extracted from this `core/` with its history.
+What breaks is the layout a consumer may have relied on: `contrib/swarm-core/core/`
+is gone (a module takes swarm-core's include directory from linking
+`${libswarm-core}` instead), `core/` no longer builds from this repository's
+tree or release tarball, and this record drops its `core` lines (they are
+swarm-core's record now). Whether `kSwarmCoreApiVersion` moves with this
+major is the maintainer's decision at the release (below): the C++ API it
+names did not change.
+
 ### The API record
 
-[`api-surface.txt`](api-surface.txt) lists the table's C++ and ns-3 items one
-per line: every name in `swarm::core` and `swarm::core::testbench` with its
-signature, default arguments, enumerator values and constant initialisers;
-the public and protected members of the module's classes; every `TypeId`
+[`api-surface.txt`](api-surface.txt) lists the module's C++ and ns-3 items
+one per line: the public and protected members of the module's classes, with
+their signatures, default arguments, enumerator values and constant
+initialisers; every `TypeId`
 with its parent, every attribute with its flags, initial value and checker,
 and every trace source with its callback signature; the experimental pieces
-(below) carry an `experimental ` prefix. It is generated
+(below) carry an `experimental ` prefix. Until #231 it also listed every
+name in `swarm::core` and `swarm::core::testbench` (`core` lines); those are
+swarm-routing/swarm-core's record now. It is generated
 (`tools/checks/check-api-surface.py generate`, `make api-surface`) from clang's
-AST of the headers and from the `GetTypeId` registrations, never edited by
-hand. Behaviour, the CMake package and default output are API too but are not
+AST of the headers, on the swarm-core release the lock names, and from the
+`GetTypeId` registrations, never edited by hand. Behaviour, the CMake package and default output are API too but are not
 in the record: the tests and the consumer checks cover them.
 
 The `api-surface` check (`.github/workflows/api-surface.yml`) regenerates it
@@ -94,7 +105,7 @@ that uses one. A consumer that relies on one pins a release.
 
 | Piece | Why experimental |
 |---|---|
-| `FuzzyMetric`, `FuzzyMetricParams`, `FuzzyMemberships`, `fuzzyMemberships`, `FuzzyTerm`, `kFuzzyTerms` (`core/swarm-fuzzy-metric.h`, #3) | no protocol selects it; AntHocNet has no fuzzy metric to port; its A/B (#132) waits for one |
+| `FuzzyMetric`, `FuzzyMetricParams`, `FuzzyMemberships`, `fuzzyMemberships`, `FuzzyTerm`, `kFuzzyTerms` (swarm-core's `core/swarm-fuzzy-metric.h`, #3; its status is swarm-routing/swarm-core's since #231) | no protocol selects it; AntHocNet has no fuzzy metric to port; its A/B (#132) waits for one |
 | `IslLinkMonitor` (`model/swarm-isl-link-monitor.h`, #4), with its attributes and trace sources | no protocol uses it; AntHocNet's own ISL code, where it came from, may adopt it after its port |
 | `SwarmRoutingBase`'s `IslHelloSuppression` attribute, `OnLinkUp`, `BeaconSuppressed`, `IsLinkStateNeighbor` | the base API that only `IslLinkMonitor` drives |
 
@@ -113,24 +124,22 @@ so.
 
 ## C++ standard
 
-`core/` targets the C++ standard of the ns-3 release swarm-core supports:
-ns-3's own `CMAKE_CXX_STANDARD_MINIMUM` (in its
+swarm-core's `core/` targets the C++ standard of the ns-3 release swarm-core
+supports: ns-3's own `CMAKE_CXX_STANDARD_MINIMUM` (in its
 `build-support/macros-and-definitions.cmake`; C++17 for ns-3.40, C++20 for
 3.41–3.45, C++23 from 3.46), so **C++23 today** (maintainer decision
-2026-11-14, #141). `core/CMakeLists.txt` sets `CMAKE_CXX_STANDARD 23` and gives
-`swarm_core` the compile feature `cxx_std_23`, so every target that links
-`swarm::core`, as a subproject, the installed package or the release tarball,
+2026-11-14, #141). Its `core/CMakeLists.txt` sets `CMAKE_CXX_STANDARD 23` and
+gives `swarm_core` the compile feature `cxx_std_23`, so every target that
+links `swarm::core`, `libswarm-core` and every module linking it included,
 compiles at C++23 or later. A consumer needs a compiler for that standard.
-The ns-3 module compiles the same sources at the standard of the ns-3 tree it
-is built in, the same one.
 
 When ns-3 raises its minimum, swarm-core follows in a **minor** release: the
 standard is not part of the source API above (no name or signature changes),
 but a consumer may need a newer compiler, so the PR opens an issue in each
 consumer listed above before it merges and the release notes say so. The
 `cxx-standard` job of `ci.yml` (`tools/checks/check-cxx-standard.py`) fails
-when `core/` is below the minimum of the `ns3-dev` image CI builds in, so the
-move is never missed.
+when the locked swarm-core release's `core/` is below the minimum of the
+`ns3-dev` image CI builds in, so the move is never missed.
 
 ## Versions
 
@@ -171,6 +180,10 @@ written for.
 - After 1.0 it changes only in a major release, by one per major. Minor and
   patch releases never change it: an additive feature is detected by the
   release a consumer pins, not by this constant.
+- v2.0.0 (proposed, #231) keeps it at 2 until the maintainer decides at the
+  release: the major moves `core/` to swarm-routing/swarm-core's release and
+  changes no name or signature, so moving it to 3 would only fail every
+  consumer's `static_assert(... == 2)`; "by one per major" says to move it.
 
 ## Deprecation
 
@@ -202,10 +215,10 @@ never changes behaviour or default output.
 
 ## How consumers are protected
 
-- **The pin.** Each protocol fetches `core/` at a commit (`SWARM_CORE_REF`)
-  and its `swarm-core / pin` check fails when swarm-core's `core/` moves
-  past it (swarm-routing/.github#190). A consumer that links `swarm::core`
-  needs no edit for a new source file (#100), only the pin bump.
+- **The lock.** Each protocol, and this module, builds on a swarm-core
+  release named by its `swarm-core.lock` (swarm-routing/.github CONTRIBUTING
+  "Dependencies"); a consumer that links `swarm::core` needs no edit for a
+  new source file (#100), only the lock bump.
 - **Fixes in the same round.** The ns-3 modules build against swarm-core
   `main`, so a breaking change cannot wait for a release to reach them. It
   merges only together with the consumer fixes: their PRs open and green

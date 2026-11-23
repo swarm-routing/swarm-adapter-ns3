@@ -8,9 +8,11 @@ section a task needs, not the whole file.
 
 **Primitives (#8) and ns-3 glue (#9).** The `swarm-core` module builds in the
 org's ns-3 image with every quality gate on (strict warnings, sanitizers,
-coverage, determinism, format, licence headers). `core/` holds the
-simulator-free primitives in namespace `swarm::core`, extracted from AntHocNet's
-dual-licensed core: the ports, the little-endian wire helpers, the bounded
+coverage, determinism, format, licence headers). Since #231 the
+simulator-free primitives in namespace `swarm::core` come from the
+swarm-routing/swarm-core release `swarm-core.lock` names (its `core/`, the
+paths `core/swarm-*.h` below; extracted from this repository's `core/` with
+its history, and before that from AntHocNet's dual-licensed core): the ports, the little-endian wire helpers, the bounded
 visited path, dedup history and pheromone table, roulette selection,
 evaporation, `RouteDecision` and the `ILinkMetric` seam. `model/` and `helper/`
 hold the ns-3 glue, taken from AntHocNet's GPL-only ns-3 modules (its adaptive

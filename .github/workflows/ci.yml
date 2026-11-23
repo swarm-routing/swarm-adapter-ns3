@@ -90,19 +90,21 @@ jobs:
       # coverage.py's report of tools/ (the `python-quality` job) into the same analysis.
       sonar-python-coverage: python-coverage
       determinism: swarm-core-seed --seed={seed}
-      dual-roots: 'core/ tools/'
-      core-roots: 'core/'
-      # The dev-only microbenchmarks include <benchmark/benchmark.h>, outside
-      # the standard library: they are never shipped (LICENSING.md, #45).
-      header-exclude: '^core/bench/'
+      # tools/ is the one dual-licensed root: swarm-core's core/ is no longer
+      # here but in swarm-routing/swarm-core's release (#231), so no core root
+      # and no core dependency to check includes against.
+      dual-roots: 'tools/'
+      core-roots: ''
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # core/ keeps up with the C++ standard of the ns-3 release swarm-core
-  # supports (docs/api-policy.md "C++ standard", #141): core/CMakeLists.txt's
-  # CMAKE_CXX_STANDARD and the cxx_std_ feature a consumer inherits against
-  # the CMAKE_CXX_STANDARD_MINIMUM of the image the `ci` job builds in. Fails
-  # when ns-3 raises its minimum and core/ has not followed.
+  # The swarm-core release this module builds on (swarm-core.lock, #231)
+  # keeps up with the C++ standard of the ns-3 release the module supports
+  # (docs/api-policy.md "C++ standard", #141): its core/CMakeLists.txt's
+  # CMAKE_CXX_STANDARD and the cxx_std_ feature every module linking
+  # ${libswarm-core} inherits, against the CMAKE_CXX_STANDARD_MINIMUM of the
+  # image the `ci` job builds in. Fails when ns-3 raises its minimum and the
+  # locked swarm-core release has not followed (a newer one, then a lock bump).
   cxx-standard:
     needs: changes
     # a failed `changes` job runs every step rather than skip a required check
@@ -120,9 +122,19 @@ jobs:
       - name: Self-test
         if: needs.changes.outputs.docs-only != 'true'
         run: python3 -I tools/checks/check-cxx-standard.py --self-test
-      - name: core/ against the image's ns-3
+      - name: The locked swarm-core release's core/ against the image's ns-3
         if: needs.changes.outputs.docs-only != 'true'
-        run: python3 -I tools/checks/check-cxx-standard.py --ns3 /opt/ns-3 core/CMakeLists.txt
+        timeout-minutes: 3
+        shell: bash  # a container step defaults to sh, which has no pipefail
+        run: |
+          set -euo pipefail
+          v() { sed -nE "s/^SWARM_CORE_$1=(.*)$/\1/p" swarm-core.lock; }
+          mkdir -p "$RUNNER_TEMP/swarm-core"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$(v ASSET)" \
+            "https://github.com/$(v REPO)/releases/download/$(v TAG)/$(v ASSET)"
+          echo "$(v SHA256)  $RUNNER_TEMP/$(v ASSET)" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$(v ASSET)" -C "$RUNNER_TEMP/swarm-core"
+          python3 -I tools/checks/check-cxx-standard.py --ns3 /opt/ns-3 "$RUNNER_TEMP"/swarm-core/*/core/CMakeLists.txt
 
   # The coverage report of the `ci` job to Codecov (report-only; GitHub OIDC,
   # no Codecov token).
@@ -133,115 +145,3 @@ jobs:
       contents: read
       id-token: write
     uses: swarm-routing/.github/.github/workflows/reusable-codecov.yml@377fb5a73ca3c6864aee726a15eeef796270e5bc # main@2026-11-23
-
-  # The core microbenchmarks (core/bench/, #45). On a PR (#170): the base and
-  # the head built on the same runner, run interleaved three times each, and
-  # the median CPU time per benchmark compared by tools/bench/bench_compare.py
-  # (the head is the PR's merge commit, so the delta is the PR's change alone):
-  # the table in the job summary and in one PR comment (updated in place), a
-  # ::warning:: for a benchmark more than 15 % slower. On main and in the merge
-  # queue: the head alone. Report-only and not a required check: shared runners
-  # are too noisy for a gate. Each side runs its own core/bench/ source.
-  bench:
-    needs: changes
-    # a failed `changes` job runs every step rather than skip a required check
-    if: ${{ !cancelled() && inputs.ns3-versions == '' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    # A newer push to the PR cancels this run, so an older run never
-    # overwrites a newer comparison in the comment.
-    concurrency:
-      group: bench-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      contents: read
-      pull-requests: write  # the delta comment (same-repository PRs only)
-    env:
-      BENCH_ARGS: --benchmark_repetitions=3 --benchmark_min_time=0.2s --benchmark_out_format=json
-    steps:
-      - name: Harden the runner (audit egress)
-        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
-        timeout-minutes: 2  # its download and start take seconds (swarm-routing/.github#164)
-        with:
-          egress-policy: audit
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: needs.changes.outputs.docs-only != 'true'
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: The comparison script's self-test
-        if: needs.changes.outputs.docs-only != 'true'
-        run: python3 -I tools/bench/bench_compare.py --self-test
-      - name: Build the head (Release)
-        if: needs.changes.outputs.docs-only != 'true'
-        run: |
-          cmake -S core -B "$RUNNER_TEMP/head" -DCMAKE_BUILD_TYPE=Release -DSWARM_CORE_BENCH=ON
-          cmake --build "$RUNNER_TEMP/head" -j "$(nproc)" --target swarm_core_bench
-      - name: Build the base (PR only)
-        if: needs.changes.outputs.docs-only != 'true' && (github.event_name == 'pull_request')
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git worktree add "$RUNNER_TEMP/base-src" "$BASE"
-          if [ ! -f "$RUNNER_TEMP/base-src/core/bench/swarm-core-bench.cc" ]; then
-            echo "The base has no core/bench; every row is new."
-            echo "NO_BASE=1" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          cmake -S "$RUNNER_TEMP/base-src/core" -B "$RUNNER_TEMP/base" -DCMAKE_BUILD_TYPE=Release -DSWARM_CORE_BENCH=ON
-          cmake --build "$RUNNER_TEMP/base" -j "$(nproc)" --target swarm_core_bench
-      - name: Run, base and head interleaved
-        if: needs.changes.outputs.docs-only != 'true'
-        env:
-          EVENT: ${{ github.event_name }}
-        run: |
-          mkdir -p bench
-          rounds=1
-          [ "$EVENT" != pull_request ] || rounds=3
-          for i in $(seq "$rounds"); do
-            if [ "$EVENT" = pull_request ] && [ -z "${NO_BASE:-}" ]; then
-              # shellcheck disable=SC2086  # BENCH_ARGS is a list of flags
-              "$RUNNER_TEMP/base/swarm_core_bench" $BENCH_ARGS --benchmark_out="bench/base-$i.json" > /dev/null
-            fi
-            # shellcheck disable=SC2086
-            "$RUNNER_TEMP/head/swarm_core_bench" $BENCH_ARGS --benchmark_out="bench/head-$i.json" > /dev/null
-          done
-      - name: Compare against the base (PR only)
-        if: needs.changes.outputs.docs-only != 'true' && (github.event_name == 'pull_request')
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MERGE_SHA: ${{ github.sha }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          shopt -s nullglob
-          python3 -I tools/bench/bench_compare.py compare --threshold 15 \
-            --base bench/base-*.json --head bench/head-*.json --markdown bench/delta.md
-          {
-            cat bench/delta.md
-            echo
-            echo "CPU: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//'). Head: the merge of $HEAD_SHA into the base ($MERGE_SHA); base $BASE_SHA."
-          } > bench/comment.md
-          cat bench/comment.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Post or update the delta comment (PR from this repository only)
-        if: needs.changes.outputs.docs-only != 'true' && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-        continue-on-error: true  # report-only: a failed comment never fails the job
-        timeout-minutes: 2
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          marker='<!-- swarm-core-bench-delta -->'
-          printf '%s\n%s' "$marker" "$(cat bench/comment.md)" > bench/body.md
-          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
-                 --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -1)
-          if [ -n "$id" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@bench/body.md > /dev/null
-          else
-            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F body=@bench/body.md > /dev/null
-          fi
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: needs.changes.outputs.docs-only != 'true'
-        with:
-          name: core-bench
-          path: bench/
-          retention-days: 7

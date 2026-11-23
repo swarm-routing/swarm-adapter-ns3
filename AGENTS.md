@@ -7,45 +7,29 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: primitives in `core/` (#8), ns-3 glue in `model/` and `helper/` (#9), node lifecycle (#43).** CI runs every org quality gate on the module. v1.0.0 froze the API (#83, `docs/api-policy.md`): API version 2 (`kSwarmCoreApiVersion`) for all of 1.x.
+**Status: ns-3 glue in `model/` and `helper/` (#9), node lifecycle (#43); since #231 the primitives come from swarm-routing/swarm-core's release (`swarm-core.lock`), `core/` is gone.** CI runs every org quality gate on the module. v1.0.0 froze the API (#83, `docs/api-policy.md`): API version 2 (`kSwarmCoreApiVersion`); the next release, v2.0.0 (proposed, the maintainer's call), is the first on swarm-core's release.
 
 The shared ns-3 contrib module `swarm-core` (`libns3.<ver>-swarm-core`) every
-swarm-routing protocol links against: simulator-agnostic C++23 primitives
-(`VisitedPath`, little-endian wire helpers, `PheromoneTable`, `RouteDecision`,
-`ILinkState`, `ILinkMetric`, evaporation and roulette selection) extracted from
-AntHocNet's dual-licensed `core/`, plus ns-3 cross-layer glue
-(`SwarmRoutingBase`, `DeferredPacketQueue`, `WifiLinkMonitor`,
-`EnergyMetricHook` over `ns3::EnergySource`, `IslLinkMonitor`).
+swarm-routing protocol links against: the ns-3 adapter of swarm-core's ports,
+the cross-layer glue (`SwarmRoutingBase`, `DeferredPacketQueue`,
+`WifiLinkMonitor`, `EnergyMetricHook` over `ns3::EnergySource`,
+`IslLinkMonitor`). The simulator-agnostic C++23 primitives (`VisitedPath`,
+little-endian wire helpers, `PheromoneTable`, `RouteDecision`, `ILinkState`,
+`ILinkMetric`, evaporation and roulette selection, the testbench) live in
+[swarm-routing/swarm-core](https://github.com/swarm-routing/swarm-core)'s
+`core/` (MIT OR GPL-2.0-only), extracted from this repository's `core/` with
+its history. The module builds on the release `swarm-core.lock` names: its
+target `swarm::core` is a `PUBLIC` dependency of `libswarm-core`, and its
+headers are re-exported as `ns3/swarm-*.h` (so `ns3/swarm-core-module.h`
+still gives both).
 
 ```
-CMakeLists.txt      build_lib(LIBNAME swarm-core ...); ns-3 generates ns3/swarm-core-module.h
-core/               simulator-free primitives, namespace swarm::core — MIT OR GPL-2.0-only, carries core/LICENSE:
-                    swarm-types.h, swarm-ports.h (IClock, IRng, INeighborProvider, ITimerScheduler with
-                    cancellable timers, ILinkState, ILinkQuality, IEnergy), swarm-wire.h (LE WireWriter,
-                    FixedWireWriter<N> with no allocation, WireReader; version byte; #46),
-                    swarm-visited-path.h, swarm-dedup-history.{h,cc} (count cap, optional entry lifetime;
-                    #33), swarm-pheromone-table.{h,cc} (flat per-destination rows: row() views, forEach,
-                    bestEntry; #45),
-                    swarm-selection.{h,cc} (roulette, evaporationFactor), swarm-route-decision.h,
-                    swarm-link-metric.h (ILinkMetric; LinkObservation::stability, #3), swarm-energy-metric.h
-                    (EnergyMetric: 1 / residual energy per hop, floored; AntHocNet's bit for bit; #2),
-                    swarm-fuzzy-metric.h (FuzzyMetric: delay x stability rule table, quality / hops; #3),
-                    swarm-observer.{h,cc} (IRouterObserver, KindName,
-                    CountingObserver -> RouterStats: bounded counters); CMakeLists.txt builds it alone, no ns-3
-                    swarm-core-sources.cmake: the files of core/, listed once for both builds (#100)
-                    swarm-coreConfig.cmake.in: the installed CMake package swarm-core (find_package; imported
-                    swarm::core; version from VERSION, SameMajorVersion from 1.0, SameMinorVersion before; #133)
-core/testbench/     swarm-testbench.h: the discrete-event testbench for protocol cores' tests (#15; header-only,
-                    MIT OR GPL-2.0-only): EventQueue (bounded, cancellable), Rng (SplitMix64 streams), Topology
-                    (links, partition), Network<Msg> (ideal MAC, linkAt, setLoss, counters, bounded trace + digest),
-                    INodeAdapter<Msg> / NodePorts<Msg>; not in the ns-3 module's headers; README "Test a protocol core"
-core/test/          the core tests, one function per primitive (MIT OR GPL-2.0-only); run by ctest and by test.py; test-testbench.cc: the bench's tests and the reference trend
-                    (local repair vs re-flood on a 6-node line with one break)
-core/test/consumer/ a scratch CMake project that links swarm::core, built by tools/checks/check-core-consumer.sh (#100)
-core/test/consumer-package/  the same consumer on a released swarm-core: find_package against an install prefix, or
-                    FetchContent of the release tarball by URL + URL_HASH (#133, #134); built by the same script
-core/bench/         dev-only microbenchmarks (MIT OR GPL-2.0-only; Google Benchmark, pinned, -DSWARM_CORE_BENCH=ON;
-                    exempt from the core-include check, as it includes <benchmark/benchmark.h>)
+CMakeLists.txt      reads swarm-core.lock, fetches the release tarball (FetchContent URL + URL_HASH, SOURCE_SUBDIR core;
+                    -DSWARM_CORE_DIR=<checkout>/core for a local swarm-core), links swarm::core PUBLIC, writes the
+                    ns3/<name>.h stubs of its headers, build_lib(LIBNAME swarm-core ...); ns-3 generates
+                    ns3/swarm-core-module.h
+swarm-core.lock     the swarm-routing/swarm-core release (repo, tag, commit, version, asset, SHA256), written by
+                    swarm-routing/.github tools/checks/release_lock.py, never by hand; verified by the `core` check
 model/              ns-3 glue — GPL-2.0-only; each file derived from AntHocNet names its source file and commit:
                     swarm-core.h (kSwarmCoreApiVersion, SwarmCoreSeed), swarm-ns3-ports.h (SwarmClock, SwarmRng,
                     SwarmTimerScheduler, address conversion, null ports), swarm-deferred-packet-queue.h
@@ -68,27 +52,25 @@ helper/             swarm-routing-helper.h: SwarmRoutingHelper (one-call Install
                     CollectStats -> SwarmRoutingStats), SwarmMonitorHelper; swarm-lifecycle-helper.h:
                     SwarmLifecycleHelper (shutdown, crash, start at given times or from a schedule file, the
                     protocol's lifecycle plus Ipv4 SetDown/SetUp, so stock arms see the same failure; #43)
-test/               swarm-core test suite: wraps every core/test/ function as a TestCase, plus the glue's
-                    (swarm-glue-tests.cc: a toy protocol on the base, a 2-3 node scenario per monitor, and
-                    the router observer's trace sources and counters, same-seed byte-identical output
-                    with and without every monitor and the observer)
+test/               swarm-core test suite: the seed helper and the glue's cases (swarm-glue-tests.cc: a toy
+                    protocol on the base, a 2-3 node scenario per monitor, and the router observer's trace
+                    sources and counters, same-seed byte-identical output with and without every monitor and
+                    the observer); the primitives' own tests run in swarm-routing/swarm-core
 examples/           swarm-core-seed: the determinism gate's program (seeded draws + a roulette sequence through IRng);
                     swarm-core-queue-bench: dev-only drain cost of the deferred queue (#46), not run by CI
-tools/checks/       check-core-consumer.sh: core/ in another CMake project gets the library alone (no test target, no ctest
-                    entry, no -Werror of ours), installs as the package find_package finds (its version rule
-                    included), and its dist.sh tarball builds by URL + URL_HASH; run by the `core` check;
-                    check-cxx-standard.py: core/'s C++ standard against an ns-3 tree's minimum (#141);
-                    check-api-surface.py: docs/api-surface.txt, the generated record of the public API, and the guard that
-                    a PR removing or changing an item in it is marked breaking (#83) — MIT OR GPL-2.0-only
-tools/bench/        bench_compare.py: the PR-vs-base microbenchmark table and its +15 % warning (#170) — MIT OR GPL-2.0-only
-tools/release/      dist.sh: the release asset (swarm-core-<ver>.tar.gz), checked in a clean ns3-dev tree; `make dist` — MIT OR GPL-2.0-only
+tools/checks/       check-cxx-standard.py: the locked swarm-core release's C++ standard against an ns-3 tree's
+                    minimum (#141); check-api-surface.py: docs/api-surface.txt, the generated record of the
+                    module's public API (ns-3 items; swarm-core records its own), and the guard that a PR removing
+                    or changing an item in it is marked breaking (#83) — MIT OR GPL-2.0-only
+tools/release/      dist.sh: the release asset (swarm-core-<ver>.tar.gz, the module with swarm-core.lock), checked in a
+                    clean ns3-dev tree; `make dist` — MIT OR GPL-2.0-only
 .cz.toml, VERSION   Commitizen config and the version it bumps; releases run through release.yml
 .github/workflows/  ci.yml (reusable-ns3-ci: strict warnings, coverage, determinism, format, headers; `cxx-standard`:
-                    tools/checks/check-cxx-standard.py, core/'s standard against the image's ns-3 minimum, #141), core.yml (check `core`:
-                    core/ alone at C++23, strict warnings, ctest, again under ASan + UBSan, the consumer check; #99), pr-title.yml,
-                    release.yml (the org reusable-release.yml, then the swarm-adapter-ns3 image), api-surface.yml (check
-                    `api-surface`: the API record is current and nothing in it removed without a breaking mark;
-                    a required check since the v1.0.0 freeze, #83)
+                    tools/checks/check-cxx-standard.py on the locked swarm-core release's core/, #141), core.yml (check
+                    `core`: swarm-core.lock verified against the release, #231), pr-title.yml, release.yml (the org
+                    reusable-release.yml, then the swarm-adapter-ns3 image), api-surface.yml (check `api-surface`: the
+                    API record is current and nothing in it removed without a breaking mark; a required check since
+                    the v1.0.0 freeze, #83)
 ```
 
 ## Build & verify
@@ -102,80 +84,51 @@ the module builds inside `ghcr.io/swarm-routing/ns3-dev:latest-{debug,sanitized}
 `latest` is the release ns-3 supports (it maintains its latest only), so
 automatic CI follows ns-3 with no edit; an older ns-3 release runs only on
 demand, through a manual `workflow_dispatch` passing `ns3-versions`, a JSON list such as `["3.48"]` (org
-CONTRIBUTING invariant 7). The
-same locally:
+CONTRIBUTING invariant 7). The configure step downloads the swarm-core release
+`swarm-core.lock` names (once per tree; it checks the SHA256), so it needs
+network access. The same locally:
 
 ```bash
 docker run --rm -v "$PWD:/src/swarm-core:ro" ghcr.io/swarm-routing/ns3-dev:latest-debug \
     ns3-build-contrib --strict-warnings --test swarm-core=/src/swarm-core
 ```
 
-`core/` alone, with no ns-3 tree, at C++23 as every protocol repository builds
-it (plain CMake; the same strict warnings as CI, `-DSWARM_CORE_SANITIZE=ON` for
-ASan + UBSan as the sanitized leg). The `core` check (`.github/workflows/core.yml`)
-runs these on every PR:
-
-```bash
-cmake -S core -B build/core && cmake --build build/core && ctest --test-dir build/core
-tools/checks/check-core-consumer.sh   # core/ added by another CMake project: the library alone (#100); installed + find_package, the tarball by URL (#133)
-cmake --install build/core --prefix /tmp/swarm-core   # the CMake package swarm-core (find_package(swarm-core CONFIG))
-```
-
-A file added to `core/` goes into `core/swarm-core-sources.cmake` only: both
-builds read it.
-
-Microbenchmarks of the per-packet primitives and the protocols' hot paths
-(`core/bench/`: a full frame encoded and decoded, `evaporate()` with ages,
-the roulette draw, `DedupHistory::seen()` among them; dev-only; fetches
-Google Benchmark at the commit and hash pinned in `core/CMakeLists.txt`). On a
-PR, CI's `bench` job builds the base and the head on one runner, runs them
-interleaved three times each and compares the median CPU time per benchmark
-with `tools/bench/bench_compare.py`: the table goes to the job summary and to
-one PR comment it updates in place, and a benchmark more than 15 % slower gets
-a warning. Report-only, never a required check (#170):
-
-```bash
-cmake -S core -B build/bench -DCMAKE_BUILD_TYPE=Release -DSWARM_CORE_BENCH=ON
-cmake --build build/bench --target swarm_core_bench && build/bench/swarm_core_bench
-# the PR comparison by hand: a base build in build/base-bench, then
-for i in 1 2 3; do
-  build/base-bench/swarm_core_bench --benchmark_repetitions=3 --benchmark_min_time=0.2s --benchmark_out_format=json --benchmark_out=base-$i.json
-  build/bench/swarm_core_bench --benchmark_repetitions=3 --benchmark_min_time=0.2s --benchmark_out_format=json --benchmark_out=head-$i.json
-done
-python3 -I tools/bench/bench_compare.py compare --base base-*.json --head head-*.json   # --self-test checks the script
-```
+Against an unreleased swarm-core, pass its `core/` to the configure step,
+`-DSWARM_CORE_DIR=<swarm-core checkout>/core` (in a tree:
+`./ns3 configure ... -- -DSWARM_CORE_DIR=...`); nothing committed names it.
+The lock moves only to a published release, written by
+`swarm-routing/.github` `tools/checks/release_lock.py` (`render`, `bump`) and
+verified by the `core` check (`release_lock.py verify swarm-core.lock`).
 
 Automatic runs (push, PR: `latest`) must pass `test.py -s swarm-core` on debug
 and sanitized, with strict warnings as errors (our code only; ns-3's headers
-are exempt), and report coverage (report-only). A manual run on older releases
+and swarm-core's are exempt), and report coverage (report-only). A manual run on older releases
 (`ns3-versions`) uses its `profiles` input (default debug) without strict
 warnings or coverage, since older images may predate those options. Every run
 has the determinism gate: `swarm-core-seed --seed=1` twice
 must be byte-identical and `--seed=2` must differ (org invariant 5). Format:
 `git ls-files '*.h' '*.cc' | xargs clang-format-18 --dry-run -Werror` with the org
 `.clang-format`. The suite
-needs ns-3.42+ (scoped `TestCase::Duration`). **`core/` targets the C++
-standard of the ns-3 release swarm-core supports**, ns-3's own
+needs ns-3.42+ (scoped `TestCase::Duration`). **swarm-core targets the C++
+standard of the ns-3 release it supports**, ns-3's own
 `CMAKE_CXX_STANDARD_MINIMUM` (`build-support/macros-and-definitions.cmake`:
-C++17 for 3.40, C++20 for 3.41–3.45, C++23 from 3.46), so C++23 today:
-`CMAKE_CXX_STANDARD 23` and `cxx_std_23` on `swarm_core` in
-`core/CMakeLists.txt`, which every consumer of `swarm::core` inherits. A
-consumer needs a compiler for it; when ns-3 raises its minimum, `core/`
-follows in a minor release, with an issue in each consumer
-(`docs/api-policy.md` "C++ standard", #141). The `cxx-standard` job of
-`ci.yml` fails when `core/` is below the `ns3-dev` image's minimum
+C++17 for 3.40, C++20 for 3.41–3.45, C++23 from 3.46), so C++23 today: its
+`cxx_std_23` on `swarm::core` reaches every module that links
+`${libswarm-core}`. The `cxx-standard` job of `ci.yml` fails when the locked
+release's `core/` is below the `ns3-dev` image's minimum
 (`python3 -I tools/checks/check-cxx-standard.py --self-test`; in the image:
-`python3 -I tools/checks/check-cxx-standard.py --ns3 /opt/ns-3`).
-Licence headers and the include rule: `make headers` (the Go gate CI runs, through `swarm-routing/.github` `tools/checks/check-headers.sh`: docker, or go).
+`python3 -I tools/checks/check-cxx-standard.py --ns3 /opt/ns-3 <swarm-core>/core/CMakeLists.txt`).
+Licence headers: `make headers` (the Go gate CI runs, through `swarm-routing/.github` `tools/checks/check-headers.sh`: docker, or go).
 
 The public API (`docs/api-policy.md` "What the API is") is recorded in
-`docs/api-surface.txt`, generated from the headers and the `TypeId`
-registrations; a PR that adds to the API commits the regenerated file, and
+`docs/api-surface.txt`, generated from the module's headers and the `TypeId`
+registrations (swarm-core's primitives are in swarm-core's own record); a PR
+that adds to the API commits the regenerated file, and
 one that removes or changes a line must be a breaking change (`!` in its
 title or a `BREAKING CHANGE:` footer). The `api-surface` workflow checks both,
 strict and a required check since the v1.0.0 freeze (#83). Needs `clang++-18` (the script's
-`CLANG_VERSION`; `apt-get install clang-18`) and docker; the self-test runs
-under any clang:
+`CLANG_VERSION`; `apt-get install clang-18`), docker and the locked swarm-core
+release (downloaded, or `--swarm-core-dir`); the self-test runs under any clang:
 
 ```bash
 make api-surface   # = python3 -I tools/checks/check-api-surface.py generate --ns3-image $(NS3_IMAGE)
@@ -185,8 +138,40 @@ python3 -I tools/checks/check-api-surface.py --self-test
 Releases (epic #6; `swarm-routing/.github` CONTRIBUTING "Cutting a release"):
 dispatch `release.yml` with `dry-run`, then `bump`; merging the bot's
 `chore(release): bump version A to B` PR tags and publishes. `make dist`
-builds the asset locally (`DIST_CHECK=0` skips the docker suite and the
-`core/`-alone build).
+builds the asset locally (`DIST_CHECK=0` skips the docker suite).
+
+<!-- org-sync:begin dependencies -->
+## How this repository gets swarm-core and ns3-tools
+
+- **swarm-core's `core/`**: `swarm-core.lock` names one swarm-core release
+  (repository, tag, the commit the tag names, version, and the SHA256 of
+  `swarm-core-<ver>.tar.gz` from the release's `SHA256SUMS`);
+  `core/CMakeLists.txt` reads it and fetches the tarball with CMake
+  `FetchContent` `URL` + `URL_HASH`. The `Makefile` and the ns-3
+  dependency name the lock's tag; `core-deps` (the licence boundary is pinned
+  by commit, org rule 2) and a benchmark cell's dependency (its build mode
+  takes a commit) name the commit the tag names.
+- **Bumping**: never by hand. The `swarm-core / pin` check (swarm-routing/.github
+  `tools/checks/check-swarm-core-pin.py`, lock mode) verifies the lock against
+  the release, fails when the places disagree, and reports a newer swarm-core
+  release (swarm-routing/.github#586: a warning on a PR or a merge group, red on
+  `main` only while org-bot's bump PR is open); org-bot's
+  `swarm-core-pin` task then opens the bump PR (`org-bot/swarm-core-pin`) with
+  the lock written from that release and the tag and its commit moved on
+  every line above, the `swarm-core=` dependency of
+  `.github/workflows/benchmark-cell.yml` (the commit) included. Between releases nothing moves.
+  With swarm-routing/.github checked out next to this repository,
+  `python3 -I ../.github/tools/checks/release_lock.py verify swarm-core.lock`
+  checks it locally.
+- **The ns-3 build**: `dependencies` of `reusable-ns3-ci.yml` names release
+  tags; `canary-dependencies` names `@main`, one non-blocking leg on push,
+  schedule and dispatch, never on a PR (swarm-routing/.github#411). A red
+  canary on `main` means the next release of a dependency needs work here.
+- **Working against an unreleased swarm-core**: `-DSWARM_CORE_DIR=<checkout>/core`
+  builds `core/` on a local checkout instead of the lock (development only).
+- **Later**: `find_package(swarm-core CONFIG)` from an installed release, then
+  a vcpkg registry (swarm-routing/swarm-adapter-ns3#135).
+<!-- org-sync:end dependencies -->
 
 ## Golden rules (invariants — do not break)
 
@@ -253,10 +238,10 @@ Org-wide (1–9), then this repo's own.
 9. **Nothing shipped depends on `.claude/`.** Skills hold procedures; scripts
    that anything shipped needs live in `tools/` (AntHocNet ADR-0014).
 <!-- org-sync:end org-rules -->
-10. **`core/` includes no simulator header.** The primitives take time, randomness, neighbours and deferred work through injected ports (as AntHocNet's `core/ports.h`), so they stay reusable, unit-testable and MIT-optional; only `model/` (GPL) includes `ns3/*`.
+10. **The primitives stay simulator-free, in swarm-routing/swarm-core.** They take time, randomness, neighbours and deferred work through injected ports (as AntHocNet's `core/ports.h`), so they stay reusable, unit-testable and MIT-optional; this repository adds no primitive and no `core/` of its own (#231): only `model/` and `helper/` (GPL) include `ns3/*`, and a primitive that two protocols need goes to swarm-core.
 11. **No protocol logic here.** swarm-core holds what two or more protocols share. A protocol's decision rules live in its own repo; promote code here only when a second protocol needs it.
 12. **Downstream API stability.** ARA, BeeAdHoc and later protocols build against `main`: a breaking API change lands with the downstream fixes or an issue in each consumer.
-13. **Every primitive change carries a test** in `test/` (AntHocNet golden rule 7).
+13. **Every glue change carries a test** in `test/` (AntHocNet golden rule 7); a primitive's test lives with it in swarm-routing/swarm-core.
 
 ## Conventions
 
@@ -493,13 +478,13 @@ chat, not the record.
 |--------------|-------|
 | Know which release a piece of work serves, or why something is not planned | [`docs/roadmap.md`](docs/roadmap.md) (the ladder v0.1.0 → v1.0.0, per-release exit criteria, non-goals; issues carry `release:` labels) |
 | Know what the API is, whether a change is breaking, or how to deprecate something | [`docs/api-policy.md`](docs/api-policy.md) (what v1.0.0 freezes, SemVer against it, `kSwarmCoreApiVersion`, the two-step deprecation; #83) |
-| Source of the primitives | AntHocNet `core/include/anthocnet/core/`, `core/src/` (MIT OR GPL-2.0-only → `core/` here); each `core/` file names its source file and commit |
-| Use or extend a primitive | `core/swarm-*.h` (the API, documented in place), its test in `core/test/`, the list in `core/test/all-tests.cc` |
-| Test a protocol core's trends without ns-3 (repair vs flood, bounded storms, evaporation) | `core/testbench/swarm-testbench.h` (the adapter contract and a short example in its top comment), the reference trend in `core/test/test-testbench.cc`, README "Test a protocol core without a simulator" (#15) |
-| Report a protocol's internals (control by kind, route changes, data decisions, state footprint) | its core calls `swarm::core::IRouterObserver` (`core/swarm-observer.h`), the adapter passes `&Observer()` and registers its `KindName` table; read with the trace sources or `SwarmRoutingHelper::CollectStats` (#42; consumer: swarm-routing/ns3-tools#91) |
+| Source of the primitives | [swarm-routing/swarm-core](https://github.com/swarm-routing/swarm-core) `core/` (MIT OR GPL-2.0-only), extracted from this repository's `core/` with its history (#231); before that AntHocNet `core/include/anthocnet/core/`, `core/src/`, each file naming its source file and commit |
+| Use or extend a primitive | swarm-routing/swarm-core (`core/swarm-*.h`, its tests in `core/test/`); here it arrives with the next lock bump (`swarm-core.lock`) |
+| Test a protocol core's trends without ns-3 (repair vs flood, bounded storms, evaporation) | swarm-routing/swarm-core `core/testbench/swarm-testbench.h` (#15); a module that links `${libswarm-core}` includes it as `"testbench/swarm-testbench.h"` |
+| Report a protocol's internals (control by kind, route changes, data decisions, state footprint) | its core calls `swarm::core::IRouterObserver` (swarm-core's `core/swarm-observer.h`), the adapter passes `&Observer()` and registers its `KindName` table; read with the trace sources or `SwarmRoutingHelper::CollectStats` (#42; consumer: swarm-routing/ns3-tools#91) |
 | Script node failures (shutdown, crash, restart) the same way for every arm | `SwarmLifecycleHelper` (`helper/swarm-lifecycle-helper.h`: times or a `<time s> <node> <op>` file); a protocol clears and restarts its state in `DoNodeShutdown`/`DoNodeCrash`/`DoNodeStart` on `SwarmRoutingBase`, and its core uses each primitive's `clear()` (the reset contract) (#43) |
 | Write a protocol's ns-3 adapter | derive from `SwarmRoutingBase` (`model/swarm-routing-base.h`: the hooks, services and ports), install with `SwarmRoutingHelper`; the toy protocol in `test/swarm-glue-tests.cc` is a minimal example |
-| Merge a change to `core/` | every protocol repository that pins swarm-core (ARA, BeeAdHoc, Termite, HOPNET) goes red on its `swarm-core / pin` check as soon as it lands, and its open PRs are blocked: open the pin-bump PR in each (`SWARM_CORE_REF` in `core/CMakeLists.txt`, the `Makefile`, every workflow's `core-deps`; the failing check names each place), verified with its core tests, until org-bot opens them (swarm-routing/.github#190, #208). A new `core/` file goes into `core/swarm-core-sources.cmake` only; the four protocol repositories link `swarm::core` (README "Use core/ from another CMake project"; #100: swarm-routing/ARA#147, swarm-routing/BeeAdHoc#125, swarm-routing/Termite#118, swarm-routing/HOPNET#121), so a new file needs no edit there beyond the pin bump |
+| Move to a newer swarm-core release | `swarm-core.lock` only, written from the release by `swarm-routing/.github` `tools/checks/release_lock.py` (`bump --write`), never typed; then `make test` and `make api-surface` (the record changes only if a module header changes); a breaking swarm-core release is a breaking change here too |
 | Source of the glue | AntHocNet `ns3/baselines/adaptive/model/adaptive-routing-base.*`, `ns3/anthocnet/model/anthocnet-{adapters,rqueue,routing-protocol}.*` (GPL-2.0-only → `model/` here) |
 | Wire-format discipline | AntHocNet `docs/wire-format.md`, ADR-0006 |
 | Link-metric seam history | AntHocNet #142 (closed), #145, #146 |

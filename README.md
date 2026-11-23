@@ -5,203 +5,68 @@
 | --- | --- |
 | Build | [![CI](https://github.com/swarm-routing/swarm-adapter-ns3/actions/workflows/ci.yml/badge.svg)](https://github.com/swarm-routing/swarm-adapter-ns3/actions/workflows/ci.yml) [![Built on: ns3-dev](https://img.shields.io/badge/built%20on-ns3--dev%20image-blue?logo=docker)](https://github.com/orgs/swarm-routing/packages/container/package/ns3-dev) |
 | Quality | [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_swarm-adapter-ns3&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=swarm-routing_swarm-adapter-ns3) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_swarm-adapter-ns3&metric=bugs)](https://sonarcloud.io/summary/new_code?id=swarm-routing_swarm-adapter-ns3) [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_swarm-adapter-ns3&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=swarm-routing_swarm-adapter-ns3) [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=swarm-routing_swarm-adapter-ns3&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=swarm-routing_swarm-adapter-ns3) [![codecov](https://codecov.io/gh/swarm-routing/swarm-adapter-ns3/branch/main/graph/badge.svg)](https://codecov.io/gh/swarm-routing/swarm-adapter-ns3/tree/main) [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/swarm-routing/swarm-adapter-ns3?utm_source=oss&utm_medium=github&utm_campaign=swarm-routing%2Fswarm-adapter-ns3&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai) |
-| Release | [![Release](https://img.shields.io/github/v/release/swarm-routing/swarm-adapter-ns3?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/swarm-adapter-ns3/releases) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24138628.svg)](https://doi.org/10.5281/zenodo.24138628) [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff) [![vcpkg: swarm-core](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fswarm-routing%2Fvcpkg-registry%2Fmain%2Fports%2Fswarm-core%2Fvcpkg.json&query=%24%5B%22version-semver%22%5D&label=vcpkg%20swarm-core)](https://github.com/swarm-routing/vcpkg-registry/tree/main/ports/swarm-core) [![Licence: GPL-2.0-only, core/ tools/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20core%2F%20tools%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md) |
+| Release | [![Release](https://img.shields.io/github/v/release/swarm-routing/swarm-adapter-ns3?sort=semver&cacheSeconds=1800)](https://github.com/swarm-routing/swarm-adapter-ns3/releases) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24138628.svg)](https://doi.org/10.5281/zenodo.24138628) [![Cite](https://img.shields.io/badge/cite-CITATION.cff-blue)](CITATION.cff) [![Licence: GPL-2.0-only, tools/ MIT OR GPL-2.0-only](https://img.shields.io/badge/licence-GPL--2.0--only%2C%20tools%2F%20MIT%20OR%20GPL--2.0--only-blue)](LICENSING.md) |
 | Trust | [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/swarm-routing/swarm-adapter-ns3/badge)](https://scorecard.dev/viewer/?uri=github.com/swarm-routing/swarm-adapter-ns3) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16816/badge)](https://www.bestpractices.dev/projects/16816) |
 | Stack | [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue?logo=cplusplus)](AGENTS.md) [![Runs on ns-3](https://img.shields.io/badge/runs%20on-ns--3-informational)](https://www.nsnam.org) |
 | Community & docs | [![Colony Arena: ns3-swarm-core](https://img.shields.io/badge/Colony%20Arena-project%20page-orange)](https://swarm-routing.github.io/projects/ns3-swarm-core/) [![Open RCAPA](https://img.shields.io/github/issues/swarm-routing/swarm-adapter-ns3/rcapa?label=open%20RCAPA&color=blue)](https://github.com/swarm-routing/swarm-adapter-ns3/blob/main/docs/rcapa/README.md) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow)](https://www.conventionalcommits.org) |
 <!-- org-sync:end badges -->
 
 The shared ns-3 contrib module `swarm-core` that every swarm-routing protocol
-links against: simulator-agnostic C++23 primitives (visited path, little-endian
-wire helpers, pheromone table, route decision, link-state and link-metric
-seams) and ns-3 cross-layer glue. **Status:** primitives in `core/`
-(namespace `swarm::core`, `MIT OR GPL-2.0-only`, buildable and testable without
-ns-3); the ns-3 glue is in `model/` and `helper/` (`GPL-2.0-only`):
-`SwarmRoutingBase`, the `Ipv4RoutingProtocol` a protocol's adapter derives from;
-`DeferredPacketQueue`; the link monitors `WifiLinkMonitor`, `IslLinkMonitor` and
-`EnergyMetricHook`, which implement the core's ports; `SwarmRoutingHelper`,
-which installs a protocol and its monitors in one call and collects each
-node's counters (`CollectStats`); the router observer (`IRouterObserver`),
-through which a protocol reports its control packets, route changes, data
-decisions and state size as trace sources; and `SwarmLifecycleHelper`, which
-scripts node shutdown, crash and restart the same way for every protocol. CI
-runs every org quality gate.
+links against: the ns-3 adapter of swarm-core's ports. **Status:** the ns-3
+glue is in `model/` and `helper/` (`GPL-2.0-only`): `SwarmRoutingBase`, the
+`Ipv4RoutingProtocol` a protocol's adapter derives from;
+`DeferredPacketQueue`; the link monitors `WifiLinkMonitor`, `IslLinkMonitor`
+and `EnergyMetricHook`, which implement the core's ports;
+`SwarmRoutingHelper`, which installs a protocol and its monitors in one call
+and collects each node's counters (`CollectStats`); the router observer
+(`IRouterObserver`), through which a protocol reports its control packets,
+route changes, data decisions and state size as trace sources; and
+`SwarmLifecycleHelper`, which scripts node shutdown, crash and restart the
+same way for every protocol. The simulator-agnostic C++23 primitives (visited
+path, little-endian wire helpers, pheromone table, route decision, link-state
+and link-metric seams, the testbench; namespace `swarm::core`,
+`MIT OR GPL-2.0-only`) live in
+[swarm-routing/swarm-core](https://github.com/swarm-routing/swarm-core) since
+#231: this module builds on its release. CI runs every org quality gate.
 
 How to work here, for people and AI agents alike: [AGENTS.md](AGENTS.md) has
 the rules and how to build and verify; the release plan is [docs/roadmap.md](docs/roadmap.md); the org conventions are in
 [CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md).
 
-## Use core/ from another CMake project
+## swarm-core's primitives: a PUBLIC dependency
 
-`core/` needs no ns-3: a C++23 compiler and CMake 3.20. C++23 is the standard of the ns-3 release swarm-core supports
-(ns-3's `CMAKE_CXX_STANDARD_MINIMUM`, C++23 from ns-3.46): `core/` follows it,
-and `swarm::core` carries it as a compile feature, so your targets that link
-it compile at C++23 or later. When ns-3 raises its minimum, swarm-core follows
-in a minor release, announced in an issue in each consumer
-([docs/api-policy.md](docs/api-policy.md#c-standard)). Added by another
-project, its `CMakeLists.txt` defines the static library `swarm_core` (alias
-`swarm::core`) and nothing else: no test target, no entry in your `ctest`, and
-its strict warnings stay on its own sources, never as errors. Fetch a
-**release** (#134): its asset `swarm-core-<ver>.tar.gz`, checked against the
-SHA256 the release's `SHA256SUMS` lists for it, never typed by hand:
+The module's `CMakeLists.txt` reads [`swarm-core.lock`](swarm-core.lock),
+which names one swarm-routing/swarm-core release (repository, tag, commit,
+version, asset and its SHA256 from the release's `SHA256SUMS`), fetches that
+release's tarball with CMake `FetchContent` (`URL` + `URL_HASH`, `SOURCE_SUBDIR
+core`), and links its target `swarm::core` to `libswarm-core` as a `PUBLIC`
+dependency (#231). So the ns-3 configure step needs network access once, and
+a module that links `${libswarm-core}` gets, with no edit of its own:
 
-```cmake
-include(FetchContent)
-set(swarm_core_timestamp)   # DOWNLOAD_EXTRACT_TIMESTAMP needs CMake 3.24+
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
-  set(swarm_core_timestamp DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
-endif()
-FetchContent_Declare(swarm_core
-  URL https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v0.3.0/swarm-core-0.3.0.tar.gz
-  URL_HASH SHA256=<the asset's line in the release's SHA256SUMS>
-  ${swarm_core_timestamp}
-  SOURCE_SUBDIR core)
-FetchContent_MakeAvailable(swarm_core)
-target_link_libraries(my_protocol_core PUBLIC swarm::core)   # #include "swarm-ports.h", ...
-```
+- the primitives' objects;
+- their include directory: `#include "swarm-ports.h"`, and
+  `#include "testbench/swarm-testbench.h"` in a core test;
+- their C++ standard (`cxx_std_23`, the standard of the ns-3 release swarm-core
+  supports, [docs/api-policy.md](docs/api-policy.md#c-standard));
+- their headers as `ns3/swarm-*.h`, and in `ns3/swarm-core-module.h`, as
+  before.
 
-The org's protocol repositories keep those values in a release lock,
-`swarm-core.lock`, written and verified by swarm-routing/.github
-`tools/checks/release_lock.py` and bumped by org-bot when a newer release is
-out; `core/CMakeLists.txt` reads it (swarm-routing/ARA's is an example), and
-swarm-routing/.github CONTRIBUTING "Dependencies" has the whole convention.
+A module that used to find swarm-core's primitives at
+`contrib/swarm-core/core/` (an include directory, or a check that the
+directory exists) drops that: the directory is gone, and the link above
+replaces it. To build against an unreleased swarm-core, pass its `core/` to
+the configure step: `./ns3 configure ... -- -DSWARM_CORE_DIR=<swarm-core
+checkout>/core`. The lock moves only to a published release, written by
+swarm-routing/.github `tools/checks/release_lock.py`; swarm-routing/.github
+CONTRIBUTING "Dependencies" has the convention.
 
-For development against an unreleased swarm-core, a commit instead (the
-`protocol-review` check flags it in a repository that consumes releases):
-
-```cmake
-FetchContent_Declare(swarm_core
-  GIT_REPOSITORY https://github.com/swarm-routing/swarm-adapter-ns3.git
-  GIT_TAG <the 40-character commit>
-  SOURCE_SUBDIR core)
-```
-
-With a checkout on disk, `add_subdirectory(/path/to/swarm-adapter-ns3/core swarm-core)`
-does the same. A file added to `core/` then reaches you with the next release
-(or commit), with no edit on your side; a commit must have
-`core/swarm-core-sources.cmake` (any after v0.1.0's). `core/` is
-`MIT OR GPL-2.0-only` ([LICENSING.md](LICENSING.md)); a scratch project that
-does exactly this is built on every PR (`core/test/consumer/`,
-`tools/checks/check-core-consumer.sh`).
-
-### As a released package
-
-`core/` also installs as the CMake package `swarm-core` (#133): the static
-library, the headers under `include/swarm-core/` (`testbench/` included) and
-`lib/cmake/swarm-core/`, whose imported target is `swarm::core` as above.
-
-```bash
-cmake -S core -B build/core -DSWARM_CORE_TESTS=OFF && cmake --build build/core
-cmake --install build/core --prefix /path/to/prefix
-```
-
-```cmake
-find_package(swarm-core CONFIG REQUIRED)   # with CMAKE_PREFIX_PATH=/path/to/prefix
-target_link_libraries(my_protocol_core PUBLIC swarm::core)
-```
-
-`find_package(swarm-core <major>.<minor> CONFIG REQUIRED)` also checks the
-installed version against the one you need:
-
-the package version is the repository's `VERSION`. From 1.0 a release
-satisfies a request for any earlier version of its major (`SameMajorVersion`);
-before 1.0 any minor may break the API ([docs/api-policy.md](docs/api-policy.md)),
-so a 0.y release satisfies a request for 0.y only (`SameMinorVersion`). A
-subproject (above) installs nothing unless it sets `SWARM_CORE_INSTALL=ON`.
-
-The release asset `swarm-core-<ver>.tar.gz` can be fetched the same way, by
-URL and its SHA256 from the release's `SHA256SUMS`, with no git and no commit
-pin (the tarball's single top directory `swarm-core/` is stripped, so the
-subdirectory is `core`):
-
-```cmake
-FetchContent_Declare(swarm_core
-  URL https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v<ver>/swarm-core-<ver>.tar.gz
-  URL_HASH SHA256=<the tarball's line in the release's SHA256SUMS>
-  SOURCE_SUBDIR core)   # add DOWNLOAD_EXTRACT_TIMESTAMP TRUE on CMake 3.24+
-FetchContent_MakeAvailable(swarm_core)
-```
-
-That form needs a release with the `swarm::core` target (after v0.2.0); the
-release lock that protocol repositories will pin it with is #134. The check
-script builds both forms on every PR (`core/test/consumer-package/`: an
-install found by `find_package`, its version rule, and a `dist.sh` tarball by
-URL + `URL_HASH`), and the release's `make dist` check builds the
-`find_package` form against the tarball it ships.
-
-### Through vcpkg
-
-For a project outside the org, the same package comes from the org's vcpkg
-git registry, [swarm-routing/vcpkg-registry](https://github.com/swarm-routing/vcpkg-registry)
-(its port `swarm-core` builds this release asset, checked by its SHA512, and
-is installed on `x64-linux` and `wasm32-emscripten` in its CI;
-swarm-routing/.github#436). Add the registry to your
-`vcpkg-configuration.json`, depend on the port and pin its version (any 0.y
-may break the API, above):
-
-```json
-{
-  "default-registry": {
-    "kind": "git",
-    "repository": "https://github.com/microsoft/vcpkg",
-    "baseline": "<a microsoft/vcpkg commit>"
-  },
-  "registries": [
-    {
-      "kind": "git",
-      "repository": "https://github.com/swarm-routing/vcpkg-registry",
-      "baseline": "<a commit of the registry's main>",
-      "packages": ["swarm-core"]
-    }
-  ]
-}
-```
-
-```json
-{ "dependencies": ["swarm-core"], "overrides": [{ "name": "swarm-core", "version": "0.4.0" }] }
-```
-
-then `find_package(swarm-core CONFIG REQUIRED)` and `swarm::core`, as above,
-with vcpkg's toolchain file. Each release here opens the port's bump PR in
-the registry by itself (`vcpkg-ports: swarm-core` in `release.yml`, #135).
-The org's own protocol repositories keep the release lock.
-
-## Test a protocol core without a simulator
-
-`core/testbench/swarm-testbench.h` is a discrete-event testbench for a
-protocol's core tests (#15): one event queue drives the ports a core takes
-(`IClock`, `IRng`, `ITimerScheduler`, `INeighborProvider`) on N nodes, over a
-scripted topology (links up and down, partitions) and an ideal MAC
-(broadcast and unicast after a fixed delay, no loss unless scripted, a
-unicast without a link handed back as a retry-limit failure). It lets a core
-test assert a trend (local repair beats re-flooding, a storm stays bounded on
-a partition, evaporation forgets a stale route) with no ns-3, so a failure
-means the algorithm, not the PHY or the harness. It is header-only and
-`MIT OR GPL-2.0-only`, and the same seed and script give the same trace and
-digest.
-
-A protocol repository that links `swarm::core` (above) includes it from its
-core tests, with no source to list:
-
-1. Write one adapter per protocol: derive from
-   `swarm::core::testbench::INodeAdapter<Msg>`, where `Msg` is your core's
-   message. Build your core from the `NodePorts<Msg>&` the factory hands you
-   (`clock()`, `rng()`, `timers()`, the ports object as the neighbour
-   provider). Turn its decisions into `ports.broadcast(msg)` and
-   `ports.unicast(to, msg)`, and feed `receive`, `undelivered` and
-   `linkChanged` to it.
-2. In a test, build a `Network<Msg>` on a `Topology` (say `Topology::line(6)`),
-   `install` the adapter, script the run (`linkAt`, `setLoss`, `at`), `run`,
-   and assert on the counters (`sent(kind)`, `sentBy`, `deliveredTotal`) and
-   on your adapters' state (`nodeAs<YourAdapter>(i)`).
-3. For determinism, run twice with one seed and compare `digest()`.
-
-The header's top comment has a 25-line adapter, and
-`core/test/test-testbench.cc` has a full reference: reactive discovery on a
-6-node line with one link break, where local repair costs about half the
-control of re-flooding from the source and loses no data. In ARA, BeeAdHoc,
-Termite and HOPNET the adapter wraps the core's router, as each ns-3 adapter
-does; they link `swarm::core`, so the header is already on their include path.
+`core/` without ns-3 (FetchContent of a release, the installed CMake package
+`swarm-core`, the vcpkg port in
+[swarm-routing/vcpkg-registry](https://github.com/swarm-routing/vcpkg-registry),
+the discrete-event testbench for a protocol core's tests): see
+[swarm-routing/swarm-core](https://github.com/swarm-routing/swarm-core). The
+releases of this repository up to v1.0.0 carried `core/` themselves, and the
+`swarm-core` port built them until swarm-core's own release.
 
 ## API stability
 
@@ -210,16 +75,18 @@ does; they link `swarm::core`, so the header is already on their include path.
 breaking change waits for 2.0.0, and anything retired is deprecated first,
 for at least two minor releases, with its replacement in the same release.
 `ns3::kSwarmCoreApiVersion` is 2 for all of 1.x, so a consumer can
-`static_assert` it.
+`static_assert` it. Moving `core/` to swarm-routing/swarm-core's release
+(#231) is the breaking change of v2.0.0 (proposed).
 
-The API is recorded item by item in [docs/api-surface.txt](docs/api-surface.txt),
-generated from the headers and the `TypeId`s; the required `api-surface`
+The module's API is recorded item by item in [docs/api-surface.txt](docs/api-surface.txt),
+generated from its headers and the `TypeId`s (swarm-core's primitives are in
+swarm-core's own record); the required `api-surface`
 check fails a PR that removes or changes an item without a breaking mark.
 What counts as the API, which change is breaking and how an API is
 deprecated: [docs/api-policy.md](docs/api-policy.md).
-`FuzzyMetric` and `IslLinkMonitor` (with the base API only it drives) ship
+`IslLinkMonitor` (with the base API only it drives) ships
 as **experimental**, outside that promise until a second protocol adopts
-them (api-policy "Experimental", #160).
+it (api-policy "Experimental", #160).
 Which protocol uses which piece: [docs/adopters.md](docs/adopters.md).
 
 <!-- org-sync:begin citing -->
@@ -238,8 +105,8 @@ Each release also has its own **version DOI**, listed on [its Zenodo record](htt
 Please also cite the work it builds on:
 
 - D. H. Joppi, *swarm-core*, 2026, [doi:10.5281/zenodo.24476619](https://doi.org/10.5281/zenodo.24476619). The ports and wire envelope this repository is the ns-3 adapter of (swarm-routing/swarm-core).
-- D. H. Joppi, *AntHocNet for NS-3*, 2026, [doi:10.5281/zenodo.20981979](https://doi.org/10.5281/zenodo.20981979). The source of the primitives in core/ and the ns-3 glue in model/: each file names its AntHocNet source and commit.
-- G. Di Caro, F. Ducatelle, L. M. Gambardella, *AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks*, Parallel Problem Solving from Nature - PPSN VIII, pp. 461–470, 2004, [doi:10.1007/978-3-540-30217-9_47](https://doi.org/10.1007/978-3-540-30217-9_47). The algorithm the primitives in core/ were extracted from: the pheromone table, its evaporation and the roulette next-hop selection follow it.
+- D. H. Joppi, *AntHocNet for NS-3*, 2026, [doi:10.5281/zenodo.20981979](https://doi.org/10.5281/zenodo.20981979). The source of the ns-3 glue in model/ and of swarm-core's primitives (swarm-routing/swarm-core, which this module builds on): each file names its AntHocNet source and commit.
+- G. Di Caro, F. Ducatelle, L. M. Gambardella, *AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks*, Parallel Problem Solving from Nature - PPSN VIII, pp. 461–470, 2004, [doi:10.1007/978-3-540-30217-9_47](https://doi.org/10.1007/978-3-540-30217-9_47). The algorithm swarm-core's primitives were extracted from: the pheromone table, its evaporation and the roulette next-hop selection follow it.
 - G. F. Riley, T. R. Henderson, *The ns-3 Network Simulator*, Modeling and Tools for Network Simulation, pp. 15–34, 2010, [doi:10.1007/978-3-642-12331-3_2](https://doi.org/10.1007/978-3-642-12331-3_2). The simulator the glue in model/ and helper/ is written for.
 
 Using it in your work? Contributions are welcome, and citing the DOI helps just as much.

@@ -49,7 +49,7 @@ references:
     publisher:
       name: "Zenodo"
     doi: "10.5281/zenodo.20981979"
-    notes: "The source of the primitives in core/ and the ns-3 glue in model/: each file names its AntHocNet source and commit."
+    notes: "The source of the ns-3 glue in model/ and of swarm-core's primitives (swarm-routing/swarm-core, which this module builds on): each file names its AntHocNet source and commit."
   - type: conference-paper
     title: "AntHocNet: An Ant-Based Hybrid Routing Algorithm for Mobile Ad Hoc Networks"
     authors:
@@ -67,7 +67,7 @@ references:
     publisher:
       name: "Springer Berlin Heidelberg"
     doi: "10.1007/978-3-540-30217-9_47"
-    notes: "The algorithm the primitives in core/ were extracted from: the pheromone table, its evaporation and the roulette next-hop selection follow it."
+    notes: "The algorithm swarm-core's primitives were extracted from: the pheromone table, its evaporation and the roulette next-hop selection follow it."
   - type: book
     title: "The ns-3 Network Simulator"
     authors:

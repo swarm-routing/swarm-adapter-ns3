@@ -59,12 +59,6 @@ reviews:
         numbers, DOIs or citations; paywalled papers never committed to public
         repositories.
 # org-sync:end coderabbit-head
-    - path: "core/**"
-      instructions: >-
-        core/ is simulator-free and MIT OR GPL-2.0-only: it includes only the C++
-        standard library and other core/ files, never ns3/* headers; time, randomness,
-        neighbours and deferred work come through injected ports. Every primitive
-        change carries a test in test/.
     - path: "model/**"
       instructions: >-
         model/ is ns-3 glue (GPL-2.0-only). No protocol-specific decision logic in

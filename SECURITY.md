@@ -10,14 +10,13 @@ org-wide policy is [swarm-routing/.github SECURITY.md](https://github.com/swarm-
 code guarantees. A protocol: its wire-format decoder (org invariant 3). A
 tool: the parsers of files it reads. If nothing parses untrusted input, say
 so in one line. -->
-The bounds-checked little-endian readers in `core/` (org invariant 3):
-`WireReader` (`core/swarm-wire.h`) and `VisitedPath::read` never read past the
-buffer, reject a short or malformed buffer (wrong version byte, bad bool,
-oversized count, trailing bytes) and fail closed, with no undefined
-behaviour. Roundtrip and seeded fuzz tests in `core/test/test-wire.cc` back
-this on every PR, including under ASan and UBSan. Everything above them
-(each protocol's header layout and routing decisions) belongs to each
-protocol.
+The bounds-checked little-endian readers (org invariant 3) are
+swarm-routing/swarm-core's (`WireReader`, `VisitedPath::read`; its
+SECURITY.md), at the release `swarm-core.lock` names (#231), whose tarball the
+build checks by SHA256. Here, `ReadWireBytes` (`model/swarm-wire-buffer.h`)
+copies a packet's bytes out of an ns-3 `Buffer` for those readers and never
+reads past the buffer's size. Everything above them (each protocol's header
+layout and routing decisions) belongs to each protocol.
 
 ## Known, by-design limitations (out of scope)
 
@@ -42,14 +41,16 @@ best-effort basis: expect an acknowledgement within a few days, not an SLA.
 Releases from v0.1.0 on (epic #6) are built, signed and published by the
 org's release workflow (`swarm-routing/.github` `reusable-release.yml`,
 called by `.github/workflows/release.yml`). Each carries
-`swarm-core-X.Y.Z.tar.gz` (the module, for ns-3's `contrib/`, with the
-dual-licensed `core/`), `SHA256SUMS`, a CycloneDX SBOM
+`swarm-core-X.Y.Z.tar.gz` (the module, for ns-3's `contrib/`; up to v1.0.0
+with the dual-licensed `core/`, after it with `swarm-core.lock`, the
+swarm-routing/swarm-core release it builds on), `SHA256SUMS`, a CycloneDX SBOM
 (`ns3-swarm-core-X.Y.Z.cdx.json`) and signed SLSA build provenance for every
 asset (`ns3-swarm-core-X.Y.Z.intoto.jsonl`, and the Sigstore bundle
 `ns3-swarm-core-X.Y.Z.sigstore.json` for offline checks). The workflow runs
 these checks itself before it publishes, and first builds the tarball in a
-clean `ns3-dev` tree, runs `test.py -s swarm-core` and builds and tests
-`core/` alone, so a release that fails any of them never goes out. With the
+clean `ns3-dev` tree and runs `test.py -s swarm-core` (up to v1.0.0 it also
+built and tested `core/` alone), so a release that fails any of them never
+goes out. With the
 [GitHub CLI](https://cli.github.com/):
 
 ```bash
