@@ -122,7 +122,9 @@ this checkout at `/src`; ns-3 is at `/opt/ns-3` and `ns3-build-contrib
 in swarm-routing/ns3-containers ("Which image").
 
 There is no `.devcontainer/` yet; a release also publishes this module
-prebuilt as the image `ghcr.io/swarm-routing/ns3-swarm-core:<tag>`.
+prebuilt as the image `ghcr.io/swarm-routing/swarm-adapter-ns3:<tag>` (releases
+up to v1.0.0: `ns3-swarm-core:<tag>`, deprecated and deleted once the
+swarm-core migration completes, #255).
 
 ## Lint and format
 
@@ -168,7 +170,7 @@ Releases follow the org procedure: [CONTRIBUTING "Cutting a release"](https://gi
 Here, `release.yml` is dispatched with `dry-run`, then `bump`; merging the
 bot's `chore(release): bump version A to B` PR tags the version and
 publishes the asset `swarm-core-<ver>.tar.gz` (built by `make dist`; `DIST_CHECK=0`
-skips its checks), the image `ns3-swarm-core:<tag>` and a vcpkg port bump.
+skips its checks), the image `swarm-adapter-ns3:<tag>` and a vcpkg port bump.
 A dry run also builds the consumers in `.github/downstream.txt` against the
 candidate. What counts as a breaking change is in
 [docs/api-policy.md](api-policy.md).

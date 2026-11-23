@@ -64,9 +64,11 @@ gh attestation verify swarm-core-X.Y.Z.tar.gz --repo swarm-routing/ns3-swarm-cor
 ```
 
 The signer is the org's reusable workflow; this repository is in the
-certificate's workflow-repository extension. Each release from v0.3.0 on also
-publishes the image `ghcr.io/swarm-routing/ns3-swarm-core:vX.Y.Z-optimized`
-and `-debug` (v0.1.0 and v0.2.0: `ghcr.io/swarm-routing/ns3-swarm-core-ns3`,
-frozen), the module built on a pinned `ns3-dev` digest, signed with cosign
+certificate's workflow-repository extension. Each release after v1.0.0 also
+publishes the image `ghcr.io/swarm-routing/swarm-adapter-ns3:vX.Y.Z-optimized`
+and `-debug` (v0.3.0 to v1.0.0: `ghcr.io/swarm-routing/ns3-swarm-core`; v0.1.0
+and v0.2.0: `ghcr.io/swarm-routing/ns3-swarm-core-ns3`; both deprecated and
+frozen, deleted once the swarm-core migration completes, #255), the module
+built on a pinned `ns3-dev` digest, signed with cosign
 (keyless): see `swarm-routing/.github` `reusable-ns3-image.yml` for its
 verify commands.
