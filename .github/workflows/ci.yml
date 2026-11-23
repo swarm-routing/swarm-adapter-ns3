@@ -130,7 +130,7 @@ jobs:
           set -euo pipefail
           v() { sed -nE "s/^SWARM_CORE_$1=(.*)$/\1/p" swarm-core.lock; }
           mkdir -p "$RUNNER_TEMP/swarm-core"
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/$(v ASSET)" \
+          curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 -o "$RUNNER_TEMP/$(v ASSET)" \
             "https://github.com/$(v REPO)/releases/download/$(v TAG)/$(v ASSET)"
           echo "$(v SHA256)  $RUNNER_TEMP/$(v ASSET)" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/$(v ASSET)" -C "$RUNNER_TEMP/swarm-core"
