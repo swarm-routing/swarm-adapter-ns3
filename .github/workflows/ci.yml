@@ -125,6 +125,7 @@ jobs:
       - name: The locked swarm-core release's core/ against the image's ns-3
         if: needs.changes.outputs.docs-only != 'true'
         timeout-minutes: 3
+        shell: bash  # a container step defaults to sh, which has no pipefail
         run: |
           set -euo pipefail
           v() { sed -nE "s/^SWARM_CORE_$1=(.*)$/\1/p" swarm-core.lock; }
