@@ -136,6 +136,60 @@ jobs:
           tar -xzf "$RUNNER_TEMP/$(v ASSET)" -C "$RUNNER_TEMP/swarm-core"
           python3 -I tools/checks/check-cxx-standard.py --ns3 /opt/ns-3 "$RUNNER_TEMP"/swarm-core/*/core/CMakeLists.txt
 
+  # Golden rule 12: the protocols build against this module. Each consumer's
+  # `main` is built on this change and its test.py suite run, so a change that
+  # breaks one shows on its own PR instead of in the consumers' weekly canary
+  # legs (as #258's removal of core/ did). Report-only: a consumer's own red
+  # `main` never blocks this repository, so the job is not a required check and
+  # continues on error. AntHocNet installs through its own `make install-ns3`
+  # (SWARM_CORE_MODULE names this checkout, swarm-routing/AntHocNet#1209); the
+  # others link their ns3/ as the module.
+  consumers:
+    needs: changes
+    if: ${{ !cancelled() && inputs.ns3-versions == '' && needs.changes.outputs.docs-only != 'true' }}
+    name: consumer / ${{ matrix.repo }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    container:
+      image: ghcr.io/swarm-routing/ns3-dev:latest-debug
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { repo: AntHocNet, module: anthocnet }
+          - { repo: ARA, module: ara }
+          - { repo: BeeAdHoc, module: beeadhoc }
+          - { repo: HOPNET, module: hopnet }
+          - { repo: Termite, module: termite }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: swarm-core
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: swarm-routing/${{ matrix.repo }}
+          ref: main
+          path: consumer
+          persist-credentials: false
+      - name: Build the consumer on this change and run its suite
+        timeout-minutes: 25
+        shell: bash  # a container step defaults to sh, which has no pipefail
+        env:
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          ws=$GITHUB_WORKSPACE
+          if [ "$MODULE" = anthocnet ]; then
+            mkdir -p "$RUNNER_TEMP/ns3/contrib"
+            SWARM_CORE_MODULE="$ws/swarm-core" make -C consumer install-ns3 NS3DIR="$RUNNER_TEMP/ns3" BASELINES=0
+            ns3-build-contrib --suite anthocnet "swarm-core=$RUNNER_TEMP/ns3/contrib/swarm-core" \
+              "anthocnet=$RUNNER_TEMP/ns3/contrib/anthocnet"
+          else
+            ns3-build-contrib --test "swarm-core=$ws/swarm-core" "$MODULE=$ws/consumer/ns3"
+          fi
+
   # The coverage report of the `ci` job to Codecov (report-only; GitHub OIDC,
   # no Codecov token).
   codecov:
