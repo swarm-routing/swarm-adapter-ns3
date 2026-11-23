@@ -6,12 +6,14 @@
 # concept DOI from `doi:` once the first release is archived on Zenodo.
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
-title: "swarm-adapter-ns3"
+title: "swarm-adapter-ns3: the ns-3 adapter of swarm-core"
 abstract: >-
-  swarm-core, the shared ns-3 contrib module every swarm-routing protocol
-  links against: simulator-agnostic C++23 primitives (visited path,
-  little-endian wire helpers, pheromone table, route decision, link metrics)
-  and the ns-3 glue they need.
+  swarm-adapter-ns3, the ns-3 adapter of swarm-core
+  (https://doi.org/10.5281/zenodo.24476619): the ns-3 contrib module (still
+  named swarm-core) every swarm-routing protocol links against, with
+  simulator-agnostic C++23 primitives (visited path, little-endian wire
+  helpers, pheromone table, route decision, link metrics) and the ns-3 glue
+  they need.
 type: software
 authors:
   - family-names: Joppi
@@ -28,6 +30,16 @@ identifiers:
     value: "10.5281/zenodo.24138628"
     description: "Concept DOI: always resolves to the latest released version."
 references:
+  - type: software
+    title: "swarm-core"
+    authors:
+      - family-names: "Joppi"
+        given-names: "Daniel Henrique"
+    year: 2026
+    publisher:
+      name: "Zenodo"
+    doi: "10.5281/zenodo.24476619"
+    notes: "The ports and wire envelope this repository is the ns-3 adapter of (swarm-routing/swarm-core)."
   - type: software
     title: "AntHocNet for NS-3"
     authors:
