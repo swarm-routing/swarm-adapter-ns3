@@ -99,7 +99,7 @@ and through the comparison harness in swarm-routing/ns3-tools.
 this checkout at `/src`; ns-3 is at `/opt/ns-3` and `ns3-build-contrib
 --help` lists the build options. Set `NS3_IMAGE` to use another profile
 (`latest-sanitized`, or a pinned `3.48-debug`). The images are documented
-in swarm-routing/ns3-containers ("Which image").
+in swarm-routing/sim-containers ("Which image").
 
 There is no `.devcontainer/` yet; a release also publishes this module
 prebuilt as the image `ghcr.io/swarm-routing/swarm-adapter-ns3:<tag>` (releases
