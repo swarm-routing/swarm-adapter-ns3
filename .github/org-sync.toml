@@ -68,13 +68,13 @@ test = 'docker run --rm -v "$(CURDIR):/src/swarm-core:ro" $(NS3_IMAGE) ns3-build
 
 
 [docs]
-# the project page keeps its id on the site until the site follows the rename
-# (swarm-routing/swarm-routing.github.io#234; swarm-routing/.github#672)
-arena_id = "ns3-swarm-core"
+# its id in swarm-routing.github.io site/hub/projects.json, the repository's name since the
+# site followed the rename (swarm-routing/swarm-routing.github.io#310; the old page redirects)
+arena_id = "swarm-adapter-ns3"
 [settings]
 # GitHub settings as code: swarm-routing/.github tools/repo-settings (swarm-routing/.github#117).
 description = "swarm-adapter-ns3, the ns-3 adapter of swarm-core's ports: the ns-3 contrib module (still named swarm-core) every swarm-routing protocol links against, SwarmRoutingBase, link monitors, energy hook and deferred queue, on swarm-routing/swarm-core's C++23 primitives."
-homepage = "https://swarm-routing.github.io/projects/ns3-swarm-core/"
+homepage = "https://swarm-routing.github.io/projects/swarm-adapter-ns3/"
 topics = ["ns-3", "swarm-intelligence", "routing-protocol", "manet", "cpp23", "pheromone", "network-simulation", "library", "ports-and-adapters"]
 ruleset = "protocol"
 required_checks = ["ci / ns-latest debug", "ci / ns-latest sanitized", "ci / format", "ci / headers / licence", "core", "cxx-standard", "check / org-sync", "title / title", "review / coderabbit", "api-surface", "swarm-core / pin"]
