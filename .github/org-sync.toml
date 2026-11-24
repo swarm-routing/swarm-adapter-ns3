@@ -77,10 +77,13 @@ description = "swarm-adapter-ns3, the ns-3 adapter of swarm-core's ports: the ns
 homepage = "https://swarm-routing.github.io/projects/ns3-swarm-core/"
 topics = ["ns-3", "swarm-intelligence", "routing-protocol", "manet", "cpp23", "pheromone", "network-simulation", "library", "ports-and-adapters"]
 ruleset = "protocol"
-required_checks = ["ci / ns-latest debug", "ci / ns-latest sanitized", "ci / format", "ci / headers / licence", "core", "cxx-standard", "check / org-sync", "title / title", "review / coderabbit", "api-surface"]
+required_checks = ["ci / ns-latest debug", "ci / ns-latest sanitized", "ci / format", "ci / headers / licence", "core", "cxx-standard", "check / org-sync", "title / title", "review / coderabbit", "api-surface", "swarm-core / pin"]
 # api-surface: the API record (docs/api-surface.txt) is current and nothing in it is removed or
 # changed without a breaking mark (#83); required from the v1.0.0 freeze. Applies when
 # swarm-routing/.github's repo-settings is dispatched with mode apply after this merges.
+# swarm-core / pin: swarm-core.lock verifies against its release (#270; runs on push, PR and
+# merge_group, no paths filter). A newer swarm-core release is only a warning on a PR or
+# merge group, so it never blocks an unrelated merge; a lock that does not verify fails.
 # Merge through a merge queue (swarm-routing/.github#130); every workflow behind a required
 # check also runs on merge_group.
 merge_queue = true
