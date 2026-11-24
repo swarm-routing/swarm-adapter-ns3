@@ -141,36 +141,31 @@ dispatch `release.yml` with `dry-run`, then `bump`; merging the bot's
 builds the asset locally (`DIST_CHECK=0` skips the docker suite).
 
 <!-- org-sync:begin dependencies -->
-## How this repository gets swarm-core and ns3-tools
+## How this repository gets swarm-core
 
-- **swarm-core's `core/`**: `swarm-core.lock` names one swarm-core release
+- **swarm-core's `core/`**: this is the ns-3 adapter of swarm-core's ports, with
+  no `core/` of its own (swarm-routing/swarm-adapter-ns3#258).
+  `swarm-core.lock` at the root names one swarm-routing/swarm-core release
   (repository, tag, the commit the tag names, version, and the SHA256 of
-  `swarm-core-<ver>.tar.gz` from the release's `SHA256SUMS`);
-  `core/CMakeLists.txt` reads it and fetches the tarball with CMake
-  `FetchContent` `URL` + `URL_HASH`. The `Makefile` and the ns-3
-  dependency name the lock's tag; `core-deps` (the licence boundary is pinned
-  by commit, org rule 2) and a benchmark cell's dependency (its build mode
-  takes a commit) name the commit the tag names.
-- **Bumping**: never by hand. The `swarm-core / pin` check (swarm-routing/.github
-  `tools/checks/check-swarm-core-pin.py`, lock mode) verifies the lock against
-  the release, fails when the places disagree, and reports a newer swarm-core
-  release (swarm-routing/.github#586: a warning on a PR or a merge group, red on
-  `main` only while org-bot's bump PR is open); org-bot's
-  `swarm-core-pin` task then opens the bump PR (`org-bot/swarm-core-pin`) with
-  the lock written from that release and the tag and its commit moved on
-  every line above, the `swarm-core=` dependency of
-  `.github/workflows/benchmark-cell.yml` (the commit) included. Between releases nothing moves.
-  With swarm-routing/.github checked out next to this repository,
+  `swarm-core-<ver>.tar.gz` from the release's `SHA256SUMS`). The root
+  `CMakeLists.txt` reads it, fetches the tarball with CMake `FetchContent`
+  `URL` + `URL_HASH` and links its `core/` (the target `swarm::core`) PUBLIC,
+  so a protocol that links this module gets swarm-core with it. The lock is
+  the whole pin: no `core-deps`, no `Makefile` or ns-3 dependency names
+  swarm-core here.
+- **Bumping**: never by hand. Write the lock with swarm-routing/.github
+  `tools/checks/release_lock.py` (`render`, `bump`); org-bot's
+  `swarm-core-pin` task opens the bump PR (`org-bot/swarm-core-pin`) that moves
+  the lock alone when a newer swarm-core release is out. With
+  swarm-routing/.github checked out next to this repository,
   `python3 -I ../.github/tools/checks/release_lock.py verify swarm-core.lock`
-  checks it locally.
-- **The ns-3 build**: `dependencies` of `reusable-ns3-ci.yml` names release
-  tags; `canary-dependencies` names `@main`, one non-blocking leg on push,
-  schedule and dispatch, never on a PR (swarm-routing/.github#411). A red
-  canary on `main` means the next release of a dependency needs work here.
+  checks the lock against the release, as CI does.
+- **Downstream**: protocols build their ns-3 module on this one's release
+  tags, and their own `core/` on the swarm-core release their own
+  `swarm-core.lock` names; a release here ships its `swarm-core.lock`.
 - **Working against an unreleased swarm-core**: `-DSWARM_CORE_DIR=<checkout>/core`
-  builds `core/` on a local checkout instead of the lock (development only).
-- **Later**: `find_package(swarm-core CONFIG)` from an installed release, then
-  a vcpkg registry (swarm-routing/swarm-adapter-ns3#135).
+  builds on a local swarm-core checkout instead of the lock (development only;
+  nothing committed names it).
 <!-- org-sync:end dependencies -->
 
 ## Golden rules (invariants — do not break)
