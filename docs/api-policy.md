@@ -183,8 +183,10 @@ written for.
 - v2.0.0 (#231) kept it at 2, by the maintainer's decision of 2026-11-23: the
   major moves `core/` to swarm-routing/swarm-core's release and changes no
   name or signature, so moving it to 3 would only have failed every
-  consumer's `static_assert(... == 2)`. The one exception to "by one per
-  major": a major that changes no name or signature keeps the constant.
+  consumer's `static_assert(... == 2)`. That decision is for the v2.0.0
+  migration only: every later major moves it by one, also one that keeps
+  every name and signature, since a changed wire layout or attribute meaning
+  breaks a consumer without changing either.
 
 ## Deprecation
 
@@ -233,7 +235,7 @@ never changes behaviour or default output.
 ## Out of scope for 1.x
 
 The host contract, a protocol core on other simulators and on real
-computers, is **v3.0.0** (epic #82; swarm-routing/.github#253; moved from
+computers, is **v3.0.0** (epic swarm-routing/swarm-core#62, was #82; swarm-routing/.github#253; moved from
 v2.0.0, which shipped as the swarm-core migration, by the maintainer's
 decision of 2026-11-24, swarm-routing/swarm-core#11). Its parts
 (#71, a node-driver contract; #72, `NodeAddress` as an opaque node id; #73,
