@@ -10,7 +10,7 @@
 #   name | owner/repo@ref | ns-3 | modules | suites | stage | run
 #
 # swarm-core itself, then each protocol's ns-3 module on it (as
-# ns3-containers' canary builds them; a protocol with no ns3/ yet is skipped).
+# sim-containers' canary builds them; a protocol with no ns3/ yet is skipped).
 # Since #231 the module has no core/: swarm-core's primitives come from the
 # swarm-routing/swarm-core release swarm-core.lock names, through the
 # module's PUBLIC dependency (its include directory reaches every module
