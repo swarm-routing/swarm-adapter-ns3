@@ -44,9 +44,11 @@ called by `.github/workflows/release.yml`). Each carries
 `swarm-core-X.Y.Z.tar.gz` (the module, for ns-3's `contrib/`; up to v1.0.0
 with the dual-licensed `core/`, after it with `swarm-core.lock`, the
 swarm-routing/swarm-core release it builds on), `SHA256SUMS`, a CycloneDX SBOM
-(`ns3-swarm-core-X.Y.Z.cdx.json`) and signed SLSA build provenance for every
-asset (`ns3-swarm-core-X.Y.Z.intoto.jsonl`, and the Sigstore bundle
-`ns3-swarm-core-X.Y.Z.sigstore.json` for offline checks). The workflow runs
+(`<name>-X.Y.Z.cdx.json`) and signed SLSA build provenance for every
+asset (`<name>-X.Y.Z.intoto.jsonl`, and the Sigstore bundle
+`<name>-X.Y.Z.sigstore.json` for offline checks), where `<name>` is the name
+the repository had when the release was built: `swarm-adapter-ns3` from
+v2.0.0 on, `ns3-swarm-core` for v0.1.0 to v1.0.0 (renamed 2026-11-22). The workflow runs
 these checks itself before it publishes, and first builds the tarball in a
 clean `ns3-dev` tree and runs `test.py -s swarm-core` (up to v1.0.0 it also
 built and tested `core/` alone), so a release that fails any of them never
@@ -54,18 +56,25 @@ goes out. With the
 [GitHub CLI](https://cli.github.com/):
 
 ```bash
+NAME=swarm-adapter-ns3   # v2.0.0 on; v0.1.0 to v1.0.0: NAME=ns3-swarm-core
 sha256sum -c SHA256SUMS --ignore-missing
-gh attestation verify swarm-core-X.Y.Z.tar.gz --repo swarm-routing/ns3-swarm-core \
+gh attestation verify swarm-core-X.Y.Z.tar.gz --repo "swarm-routing/$NAME" \
   --signer-workflow swarm-routing/.github/.github/workflows/reusable-release.yml
-gh attestation verify swarm-core-X.Y.Z.tar.gz --repo swarm-routing/ns3-swarm-core \
-  --predicate-type https://cyclonedx.org/bom
+gh attestation verify swarm-core-X.Y.Z.tar.gz --repo "swarm-routing/$NAME" \
+  --predicate-type https://cyclonedx.org/bom \
+  --signer-workflow swarm-routing/.github/.github/workflows/reusable-release.yml
 gh attestation trusted-root > trusted_root.jsonl   # once, while online
-gh attestation verify swarm-core-X.Y.Z.tar.gz --repo swarm-routing/ns3-swarm-core \
-  --bundle ns3-swarm-core-X.Y.Z.sigstore.json --custom-trusted-root trusted_root.jsonl   # offline
+gh attestation verify swarm-core-X.Y.Z.tar.gz --repo "swarm-routing/$NAME" \
+  --bundle "$NAME-X.Y.Z.sigstore.json" --custom-trusted-root trusted_root.jsonl \
+  --signer-workflow swarm-routing/.github/.github/workflows/reusable-release.yml   # offline
 ```
 
-The signer is the org's reusable workflow; this repository is in the
-certificate's workflow-repository extension. Each release after v1.0.0 also
+The signer is the org's reusable workflow, not this repository, so every
+command names it with `--signer-workflow` (without it `gh` expects a workflow
+of `--repo`). `--repo` is the repository the release was built in, as its
+certificate's source-repository extension records it: a release built before
+the rename carries `ns3-swarm-core` and fails against `swarm-adapter-ns3`, and
+the other way round. Each release after v1.0.0 also
 publishes the image `ghcr.io/swarm-routing/swarm-adapter-ns3:vX.Y.Z-optimized`
 and `-debug` (v0.3.0 to v1.0.0: `ghcr.io/swarm-routing/ns3-swarm-core`; v0.1.0
 and v0.2.0: `ghcr.io/swarm-routing/ns3-swarm-core-ns3`; both deprecated and
