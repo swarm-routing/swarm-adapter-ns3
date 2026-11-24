@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Daniel Joppi (https://github.com/swarm-routing)
+# SPDX-License-Identifier: GPL-2.0-only
+name: swarm-core pin
+
+# The module builds on the swarm-core release swarm-core.lock names (#231):
+# the root CMakeLists.txt reads the lock and fetches the tarball by URL + SHA256.
+# This check runs swarm-routing/.github reusable-swarm-core-pin.yml, which is
+# check-swarm-core-pin.py in lock mode, adapter layout (swarm-routing/.github#840).
+# It fails when the lock does not verify against the release. When a newer
+# swarm-core release is out it warns on a PR and turns red on main while
+# org-bot's bump PR is open. Between releases nothing moves. The check is
+# named `swarm-core / pin`.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  swarm-core:
+    uses: swarm-routing/.github/.github/workflows/reusable-swarm-core-pin.yml@9a1ce0ffeda6916186f97b0c5a7678bcbc7578ad # main@2026-11-24

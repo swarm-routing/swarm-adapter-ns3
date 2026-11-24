@@ -70,7 +70,8 @@ tools/release/      dist.sh: the release asset (swarm-core-<ver>.tar.gz, the mod
                     `core`: swarm-core.lock verified against the release, #231), pr-title.yml, release.yml (the org
                     reusable-release.yml, then the swarm-adapter-ns3 image), api-surface.yml (check `api-surface`: the
                     API record is current and nothing in it removed without a breaking mark; a required check since
-                    the v1.0.0 freeze, #83)
+                    the v1.0.0 freeze, #83), swarm-core-pin.yml (check `swarm-core / pin`: the lock verified against
+                    the release, and a newer swarm-core release reported; swarm-routing/.github#840)
 ```
 
 ## Build & verify
