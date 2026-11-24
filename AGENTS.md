@@ -7,7 +7,7 @@ before changing anything. Org-wide conventions:
 
 ## What this repo is
 
-**Status: ns-3 glue in `model/` and `helper/` (#9), node lifecycle (#43); since #231 the primitives come from swarm-routing/swarm-core's release (`swarm-core.lock`), `core/` is gone.** CI runs every org quality gate on the module. v1.0.0 froze the API (#83, `docs/api-policy.md`): API version 2 (`kSwarmCoreApiVersion`); the next release, v2.0.0 (proposed, the maintainer's call), is the first on swarm-core's release.
+**Status: ns-3 glue in `model/` and `helper/` (#9), node lifecycle (#43); since #231 the primitives come from swarm-routing/swarm-core's release (`swarm-core.lock`), `core/` is gone.** CI runs every org quality gate on the module. v1.0.0 froze the API (#83, `docs/api-policy.md`): API version 2 (`kSwarmCoreApiVersion`), kept at 2 by v2.0.0 (2026-11-24), the first release on swarm-core's release; the host contract is v3.0.0 (epic swarm-routing/swarm-core#62, was #82, `docs/roadmap.md`).
 
 The shared ns-3 contrib module `swarm-core` (`libns3.<ver>-swarm-core`) every
 swarm-routing protocol links against: the ns-3 adapter of swarm-core's ports,

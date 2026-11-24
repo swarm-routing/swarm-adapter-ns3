@@ -76,7 +76,8 @@ breaking change waits for 2.0.0, and anything retired is deprecated first,
 for at least two minor releases, with its replacement in the same release.
 `ns3::kSwarmCoreApiVersion` is 2 for all of 1.x, so a consumer can
 `static_assert` it. Moving `core/` to swarm-routing/swarm-core's release
-(#231) is the breaking change of v2.0.0 (proposed).
+(#231) was the breaking change of v2.0.0 (2026-11-24), which keeps
+`kSwarmCoreApiVersion` at 2; the host contract is v3.0.0 (epic swarm-routing/swarm-core#62, was #82).
 
 The module's API is recorded item by item in [docs/api-surface.txt](docs/api-surface.txt),
 generated from its headers and the `TypeId`s (swarm-core's primitives are in

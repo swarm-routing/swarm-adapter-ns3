@@ -54,7 +54,7 @@ release unchanged, with deprecation warnings not treated as errors
 (ABI) compatibility is not promised; every consumer compiles swarm-core from
 source.
 
-**v2.0.0 (proposed, #231) moves `core/` out.** The primitives come from
+**v2.0.0 (shipped 2026-11-24, #231) moves `core/` out.** The primitives come from
 swarm-routing/swarm-core's release instead of this repository's `core/`; their
 names, signatures and headers (`ns3/swarm-*.h` included) are unchanged at
 swarm-core v2.0.0, which was extracted from this `core/` with its history.
@@ -180,10 +180,13 @@ written for.
 - After 1.0 it changes only in a major release, by one per major. Minor and
   patch releases never change it: an additive feature is detected by the
   release a consumer pins, not by this constant.
-- v2.0.0 (proposed, #231) keeps it at 2 until the maintainer decides at the
-  release: the major moves `core/` to swarm-routing/swarm-core's release and
-  changes no name or signature, so moving it to 3 would only fail every
-  consumer's `static_assert(... == 2)`; "by one per major" says to move it.
+- v2.0.0 (#231) kept it at 2, by the maintainer's decision of 2026-11-23: the
+  major moves `core/` to swarm-routing/swarm-core's release and changes no
+  name or signature, so moving it to 3 would only have failed every
+  consumer's `static_assert(... == 2)`. That decision is for the v2.0.0
+  migration only: every later major moves it by one, also one that keeps
+  every name and signature, since a changed wire layout or attribute meaning
+  breaks a consumer without changing either.
 
 ## Deprecation
 
@@ -232,7 +235,9 @@ never changes behaviour or default output.
 ## Out of scope for 1.x
 
 The host contract, a protocol core on other simulators and on real
-computers, is **v2.0.0** (epic #82; swarm-routing/.github#253). Its parts
+computers, is **v3.0.0** (epic swarm-routing/swarm-core#62, was #82; swarm-routing/.github#253; moved from
+v2.0.0, which shipped as the swarm-core migration, by the maintainer's
+decision of 2026-11-24, swarm-routing/swarm-core#11). Its parts
 (#71, a node-driver contract; #72, `NodeAddress` as an opaque node id; #73,
 link signals as one port with fallbacks) are breaking by design and are not
 part of 1.0: in 1.x, `NodeAddress` and the ports keep the form v1.0.0 ships.
