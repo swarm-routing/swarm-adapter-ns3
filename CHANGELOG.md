@@ -1,3 +1,21 @@
+## v2.0.0 (2026-11-24)
+
+### BREAKING CHANGE
+
+- `contrib/swarm-core/core/` no longer exists. A module
+that included it or checked for it takes swarm-core's include directory
+from linking `${libswarm-core}` instead. `core/` no longer builds from
+this repository or its release tarball (use swarm-routing/swarm-core),
+and the API record drops its `core` lines.
+
+### Feat
+
+- **build**: build the ns-3 module on swarm-core v2.0.0 as a public dependency, core/ removed (#258)
+
+### Fix
+
+- **tools**: https-only release fetch, and swarm-core's check fixes ported (#260)
+
 ## v1.0.0 (2026-11-16)
 
 **v1.0.0: the API is frozen** (#83). `kSwarmCoreApiVersion` stays 2 for all
