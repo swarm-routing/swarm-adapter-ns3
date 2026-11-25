@@ -11,6 +11,7 @@
 
 #include "ns3/basic-energy-source-helper.h"
 #include "ns3/config.h"
+#include "ns3/constant-velocity-mobility-model.h"
 #include "ns3/global-value.h"
 #include "ns3/boolean.h"
 #include "ns3/buffer.h"
@@ -176,9 +177,11 @@ public:
 
     using SwarmRoutingBase::BeaconSuppressed;
     using SwarmRoutingBase::Energy;
+    using SwarmRoutingBase::EnergyProvider;
     using SwarmRoutingBase::IsLinkStateNeighbor;
     using SwarmRoutingBase::LinkQuality;
     using SwarmRoutingBase::LinkState;
+    using SwarmRoutingBase::Location;
     using SwarmRoutingBase::Neighbors;
     using SwarmRoutingBase::NextHopRoute;
     using SwarmRoutingBase::ResolveNextHop;
@@ -2121,7 +2124,8 @@ private:
         a.Assign(devs);
         WifiHelper::AssignStreams(devs, 10);
         stack.AssignStreams(nodes, 100);
-        NS_TEST_ASSERT_MSG_EQ(SwarmMonitorHelper().Install(nodes), 2u, "one monitor per node");
+        NS_TEST_ASSERT_MSG_EQ(SwarmMonitorHelper().Install(nodes), 4u,
+                              "a link monitor and a location provider per node");
         Ptr<Node> n0 = nodes.Get(0);
         Ptr<Node> n1 = nodes.Get(1);
         Ptr<WifiLinkMonitor> m0 = n0->GetObject<WifiLinkMonitor>();
@@ -2676,6 +2680,134 @@ private:
     }
 };
 
+/// The energy source as swarm-core's IEnergyProvider (#232): a Battery
+/// snapshot that agrees with IEnergy, Unknown without a source, through
+/// SwarmEnergyProvider and the base's EnergyProvider() port.
+class EnergyProviderTestCase : public TestCase {
+public:
+    EnergyProviderTestCase()
+        : TestCase("glue: SwarmEnergyProvider over the hook, Battery or Unknown") {}
+
+private:
+    void DoRun() override {
+        NodeContainer nodes;
+        nodes.Create(2);
+        BasicEnergySourceHelper energy;
+        energy.Set("BasicEnergySourceInitialEnergyJ", DoubleValue(10.0));
+        energy::EnergySourceContainer sources = energy.Install(nodes.Get(0));
+        Ptr<energy::EnergySource> source = sources.Get(0);
+        Ptr<energy::SimpleDeviceEnergyModel> load = CreateObject<energy::SimpleDeviceEnergyModel>();
+        load->SetNode(nodes.Get(0));
+        load->SetEnergySource(source);
+        source->AppendDeviceEnergyModel(load);
+        SwarmRoutingHelper toy("ns3::swarmtest::ToyProtocol");
+        toy.Install(nodes);
+        Ptr<EnergyMetricHook> hook = nodes.Get(0)->GetObject<EnergyMetricHook>();
+        NS_TEST_ASSERT_MSG_EQ(static_cast<bool>(hook), true, "the helper installed the hook");
+
+        const swarm::core::EnergySnapshot full = SwarmEnergyProvider(PeekPointer(hook)).snapshot();
+        NS_TEST_EXPECT_MSG_EQ((full.source == swarm::core::PowerSource::Battery), true,
+                              "an energy source is a battery");
+        NS_TEST_EXPECT_MSG_EQ_TOL(full.fraction, 1.0, 1e-12, "starts full");
+        NS_TEST_EXPECT_MSG_EQ((Toy(nodes.Get(0))->EnergyProvider().snapshot().source ==
+                               swarm::core::PowerSource::Battery),
+                              true, "the base's port reads the hook");
+        const swarm::core::EnergySnapshot none = Toy(nodes.Get(1))->EnergyProvider().snapshot();
+        NS_TEST_EXPECT_MSG_EQ((none.source == swarm::core::PowerSource::Unknown), true,
+                              "no source: Unknown");
+        NS_TEST_EXPECT_MSG_EQ(std::isnan(none.residualFraction()), true, "Unknown reads NaN");
+        NS_TEST_EXPECT_MSG_EQ(
+            (SwarmEnergyProvider().snapshot().source == swarm::core::PowerSource::Unknown), true,
+            "no IEnergy: Unknown");
+        Ptr<EnergyMetricHook> bare = CreateObject<EnergyMetricHook>();
+        NS_TEST_EXPECT_MSG_EQ((SwarmEnergyProvider(PeekPointer(bare)).snapshot().source ==
+                               swarm::core::PowerSource::Unknown),
+                              true, "an uninstalled hook (NaN): Unknown");
+
+        swarm::core::EnergySnapshot at25;
+        double energyAt25 = -1.0;
+        Simulator::Schedule(Seconds(0.0), [&]() { load->SetCurrentA(1.0); });  // 3 W of 10 J
+        Simulator::Schedule(Seconds(2.5), [&]() {
+            at25 = Toy(nodes.Get(0))->EnergyProvider().snapshot();
+            energyAt25 = Toy(nodes.Get(0))->Energy().residualEnergyFraction();
+        });
+        Simulator::Stop(Seconds(2.6));
+        Simulator::Run();
+        NS_TEST_EXPECT_MSG_EQ_TOL(at25.fraction, 0.4, 1e-9, "the last periodic update");
+        NS_TEST_EXPECT_MSG_EQ(at25.residualFraction(), energyAt25,
+                              "IEnergyProvider and IEnergy agree");
+        Simulator::Destroy();
+        bare->Dispose();
+    }
+};
+
+// --- MobilityLocationProvider
+// ----------------------------------------------------------------
+
+/// The pose from a node's mobility model (#232): a standing node, a moving
+/// one, one without a model; the helper installs one where a model is and the
+/// base's Location() port reads it.
+class LocationProviderTestCase : public TestCase {
+public:
+    LocationProviderTestCase()
+        : TestCase("glue: MobilityLocationProvider pose from the mobility model") {}
+
+private:
+    void DoRun() override {
+        NodeContainer nodes;
+        nodes.Create(3);
+        MobilityHelper standing;
+        standing.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+        standing.Install(nodes.Get(0));
+        nodes.Get(0)->GetObject<MobilityModel>()->SetPosition(Vector(1.0, 2.0, 3.0));
+        MobilityHelper moving;
+        moving.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+        moving.Install(nodes.Get(1));
+        Ptr<ConstantVelocityMobilityModel> cv =
+            nodes.Get(1)->GetObject<ConstantVelocityMobilityModel>();
+        cv->SetPosition(Vector(0.0, 0.0, 0.0));
+        cv->SetVelocity(Vector(2.0, -1.0, 0.0));
+        // n2 has no mobility model.
+
+        SwarmRoutingHelper toy("ns3::swarmtest::ToyProtocol");
+        InternetStackHelper stack;
+        stack.SetRoutingHelper(toy);
+        stack.Install(nodes);
+        NS_TEST_ASSERT_MSG_EQ(SwarmMonitorHelper().Install(nodes), 2u,
+                              "a provider on each node with a mobility model");
+        NS_TEST_ASSERT_MSG_EQ(SwarmMonitorHelper().Install(nodes), 0u, "idempotent");
+        NS_TEST_EXPECT_MSG_EQ(
+            static_cast<bool>(nodes.Get(2)->GetObject<MobilityLocationProvider>()), false,
+            "no model, no provider");
+        Ptr<MobilityLocationProvider> bare = CreateObject<MobilityLocationProvider>();
+        NS_TEST_EXPECT_MSG_EQ(bare->Install(nodes.Get(2)), false, "Install(node) without model");
+        NS_TEST_EXPECT_MSG_EQ(bare->pose().has_value(), false, "no model: no pose");
+        NS_TEST_EXPECT_MSG_EQ(Toy(nodes.Get(2))->Location().pose().has_value(), false,
+                              "the base's null port: no pose");
+
+        const std::optional<swarm::core::GeoPose> p0 = Toy(nodes.Get(0))->Location().pose();
+        NS_TEST_ASSERT_MSG_EQ(p0.has_value(), true, "a standing node has a pose");
+        NS_TEST_EXPECT_MSG_EQ(p0->position.x, 1.0, "x");
+        NS_TEST_EXPECT_MSG_EQ(p0->position.y, 2.0, "y");
+        NS_TEST_EXPECT_MSG_EQ(p0->position.z, 3.0, "z");
+        NS_TEST_ASSERT_MSG_EQ(p0->velocity.has_value(), true, "ns-3 knows its velocity");
+        NS_TEST_EXPECT_MSG_EQ(p0->velocity->x, 0.0, "standing still");
+
+        std::optional<swarm::core::GeoPose> p1;
+        Simulator::Schedule(Seconds(1.5), [&]() { p1 = Toy(nodes.Get(1))->Location().pose(); });
+        Simulator::Stop(Seconds(2));
+        Simulator::Run();
+        NS_TEST_ASSERT_MSG_EQ(p1.has_value(), true, "a moving node has a pose");
+        NS_TEST_EXPECT_MSG_EQ_TOL(p1->position.x, 3.0, 1e-9, "2 m/s for 1.5 s");
+        NS_TEST_EXPECT_MSG_EQ_TOL(p1->position.y, -1.5, 1e-9, "-1 m/s for 1.5 s");
+        NS_TEST_ASSERT_MSG_EQ(p1->velocity.has_value(), true, "with its velocity");
+        NS_TEST_EXPECT_MSG_EQ(p1->velocity->x, 2.0, "vx");
+        NS_TEST_EXPECT_MSG_EQ(p1->velocity->y, -1.0, "vy");
+        Simulator::Destroy();
+        bare->Dispose();
+    }
+};
+
 // --- determinism
 // ---------------------------------------------------------------------
 
@@ -2733,7 +2865,11 @@ std::string RunDeterminismScenario(uint32_t seed, bool monitors, bool observe = 
                     probe << p->LinkState().macQueueLength(swarm::core::kInvalidAddress)
                           << p->LinkState().macServiceTime(ToNodeAddress(n2a))
                           << p->LinkQuality().sinrDbFrom(ToNodeAddress(n2a))
-                          << p->Energy().residualEnergyFraction();
+                          << p->Energy().residualEnergyFraction()
+                          << p->EnergyProvider().snapshot().residualFraction();
+                    if (const auto pose = p->Location().pose()) {  // #232
+                        probe << pose->position.x << pose->velocity.value_or(swarm::core::Vec3{}).x;
+                    }
                 }
             });
         }
@@ -2775,7 +2911,7 @@ class DeterminismTestCase : public TestCase {
 public:
     DeterminismTestCase()
         : TestCase("glue: same seed, byte-identical output with and without the "
-                   "monitors and the "
+                   "monitors, the providers and the "
                    "observer") {}
 
 private:
@@ -2838,6 +2974,8 @@ std::vector<TestCase*> MakeGlueTestCases() {
             new PurgeOnUseTestCase(true),
             new PurgeOnUseTestCase(false),
             new EnergyHookTestCase,
+            new EnergyProviderTestCase,
+            new LocationProviderTestCase,
             new ObserverTestCase,
             new LifecycleTestCase,
             new LifecycleHelperTestCase,

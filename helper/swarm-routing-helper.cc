@@ -4,6 +4,7 @@
 
 #include "ns3/swarm-energy-metric-hook.h"
 #include "ns3/swarm-isl-link-monitor.h"
+#include "ns3/swarm-mobility-location-provider.h"
 #include "ns3/swarm-routing-base.h"
 #include "ns3/swarm-wifi-link-monitor.h"
 
@@ -42,6 +43,10 @@ uint32_t SwarmMonitorHelper::Install(Ptr<Node> node) const {
         ++installed;
     }
     if (!node->GetObject<EnergyMetricHook>() && CreateObject<EnergyMetricHook>()->Install(node)) {
+        ++installed;
+    }
+    if (!node->GetObject<MobilityLocationProvider>() &&
+        CreateObject<MobilityLocationProvider>()->Install(node)) {
         ++installed;
     }
     return installed;

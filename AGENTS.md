@@ -34,7 +34,8 @@ swarm-core.lock     the swarm-routing/swarm-core release (repo, tag, commit, ver
                     swarm-routing/.github tools/checks/release_lock.py, never by hand; verified by the `core` check
 model/              ns-3 glue — GPL-2.0-only; each file derived from AntHocNet names its source file and commit:
                     swarm-core.h (kSwarmCoreApiVersion, SwarmCoreSeed), swarm-ns3-ports.h (SwarmClock, SwarmRng,
-                    SwarmTimerScheduler, address conversion, null ports), swarm-deferred-packet-queue.h
+                    SwarmTimerScheduler, address conversion, null ports, SwarmEnergyProvider: IEnergyProvider
+                    over IEnergy, #232), swarm-deferred-packet-queue.h
                     (DeferredPacketQueue: MaxPackets 64 / MaxAge 30 s attributes, drop accounting, in-place
                     moves, Requeue in one batch; #46; hold classes with a cap and statistics each,
                     RearmOnEnqueue; #126), swarm-wire-buffer.h (BufferWireWriter, ReadWireBytes:
@@ -49,7 +50,9 @@ model/              ns-3 glue — GPL-2.0-only; each file derived from AntHocNet
                     swarm-wifi-link-monitor.h (ILinkState + ILinkQuality + retry-limit LinkFailure),
                     swarm-isl-link-monitor.h (INeighborProvider + ILinkState + LinkChange on p2p; PeerOnInterface,
                     IsAuthoritative: one known peer, never failed, TrustAfterFailure off, #4),
-                    swarm-energy-metric-hook.h (IEnergy from an EnergySource's RemainingEnergy trace)
+                    swarm-energy-metric-hook.h (IEnergy from an EnergySource's RemainingEnergy trace),
+                    swarm-mobility-location-provider.h (the experimental ILocationProvider from the node's
+                    MobilityModel, read-only; #232)
 helper/             swarm-routing-helper.h: SwarmRoutingHelper (one-call Install, AssignStreams, SetKindNames,
                     CollectStats -> SwarmRoutingStats), SwarmMonitorHelper; swarm-lifecycle-helper.h:
                     SwarmLifecycleHelper (shutdown, crash, start at given times or from a schedule file, the

@@ -7,6 +7,7 @@
 
 #include "ns3/simulator.h"
 
+#include <cmath>
 #include <limits>
 
 namespace ns3 {
@@ -98,6 +99,15 @@ double NullLinkQuality::sinrDbFrom(swarm::core::NodeAddress) const {
 
 double NullEnergy::residualEnergyFraction() const {
     return std::numeric_limits<double>::quiet_NaN();
+}
+
+swarm::core::EnergySnapshot SwarmEnergyProvider::snapshot() const {
+    const double fraction =
+        m_energy ? m_energy->residualEnergyFraction() : std::numeric_limits<double>::quiet_NaN();
+    if (std::isnan(fraction)) {
+        return {};  // Unknown: no evidence
+    }
+    return {swarm::core::PowerSource::Battery, fraction};
 }
 
 }  // namespace ns3

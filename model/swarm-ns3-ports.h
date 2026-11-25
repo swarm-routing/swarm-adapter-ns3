@@ -104,6 +104,23 @@ public:
     double residualEnergyFraction() const override;
 };
 
+/// swarm-core's IEnergyProvider over an IEnergy (#232; swarm-routing/swarm-core#7):
+/// Battery with the residual fraction an ns-3 EnergySource gives (an
+/// EnergyMetricHook), Unknown when it reads NaN or there is none. An ns-3
+/// energy source is a battery; Mains is for a host that knows a node has none.
+/// Reads only, so snapshot().residualFraction() is the IEnergy's value: the two
+/// ports never disagree.
+class SwarmEnergyProvider : public swarm::core::IEnergyProvider {
+public:
+    explicit SwarmEnergyProvider(const swarm::core::IEnergy* energy = nullptr) : m_energy(energy) {}
+    /// The IEnergy read from now on; null: Unknown.
+    void SetEnergy(const swarm::core::IEnergy* energy) { m_energy = energy; }
+    swarm::core::EnergySnapshot snapshot() const override;
+
+private:
+    const swarm::core::IEnergy* m_energy;
+};
+
 /// No link-layer neighbour knowledge (a protocol learns its own, from hellos).
 class NullNeighborProvider : public swarm::core::INeighborProvider {
 public:

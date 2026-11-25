@@ -8,7 +8,8 @@
 //
 // - the core's ports over ns-3: Clock(), Rng() (AssignStreams pins it),
 //   Timers() (cancelled on dispose), and the node's monitors when installed
-//   (LinkState(), LinkQuality(), Neighbors(), Energy(); null ports otherwise);
+//   (LinkState(), LinkQuality(), Neighbors(), Energy(), EnergyProvider(),
+//   Location(); null ports otherwise);
 // - one UDP control socket per interface (unicast + subnet broadcast) on the
 //   protocol's port, so harnesses count control traffic as for every protocol;
 //   they send with IP TTL 1 (control traffic goes one hop: see "Control
@@ -44,6 +45,7 @@
 #include "swarm-deferred-packet-queue.h"
 #include "swarm-ns3-ports.h"
 
+#include "ns3/swarm-location.h"
 #include "ns3/swarm-observer.h"
 #include "ns3/swarm-route-decision.h"
 
@@ -439,6 +441,12 @@ protected:
     const swarm::core::INeighborProvider& Neighbors() const;
     /// The node's EnergyMetricHook, else a null port.
     const swarm::core::IEnergy& Energy() const;
+    /// Energy() as swarm-core's IEnergyProvider (SwarmEnergyProvider): Battery
+    /// with the hook's fraction, else Unknown (#232).
+    const swarm::core::IEnergyProvider& EnergyProvider() const;
+    /// The node's MobilityLocationProvider, else a null port (no pose) (#232).
+    /// Experimental, as swarm-core's ILocationProvider.
+    const swarm::core::ILocationProvider& Location() const;
 
     /// Where a packet to next hop `next` leaves: the IPv4 interface and the
     /// gateway, by the three rules SetPeerRoute describes (#127). Every send of
@@ -555,6 +563,8 @@ private:
     mutable const swarm::core::ILinkQuality* m_linkQualityPort = nullptr;
     mutable const swarm::core::INeighborProvider* m_neighborsPort = nullptr;
     mutable const swarm::core::IEnergy* m_energyPort = nullptr;
+    mutable SwarmEnergyProvider m_energyProvider;  ///< over m_energyPort (#232)
+    mutable const swarm::core::ILocationProvider* m_locationPort = nullptr;
 };
 
 }  // namespace ns3
