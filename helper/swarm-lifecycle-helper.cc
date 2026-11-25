@@ -14,6 +14,7 @@
 
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <sstream>
 
 namespace ns3 {
@@ -50,12 +51,46 @@ Time ShutdownRadioGrace() {
     return MilliSeconds(100);
 }
 
+/// Each node's lifecycle generation, moved by every operation on it: a
+/// deferred radio switch-off runs only if no operation came after the one
+/// that scheduled it. One entry per node id (org rule 7).
+std::map<uint32_t, uint64_t>& Generations() {
+    static std::map<uint32_t, uint64_t> generations;
+    return generations;
+}
+
+uint64_t NextGeneration(Ptr<Node> node) {
+    return ++Generations()[node->GetId()];
+}
+
+bool IsCurrent(Ptr<Node> node, uint64_t generation) {
+    return Generations()[node->GetId()] == generation;
+}
+
+/// One radio off. A sleeping radio wakes first (ns-3 switches only an awake
+/// radio off); one switching channel goes off when the switch ends, unless a
+/// later lifecycle operation came first.
+void RadioOff(Ptr<Node> node, Ptr<WifiPhy> phy, uint64_t generation) {
+    if (!IsCurrent(node, generation) || phy->IsStateOff()) {
+        return;
+    }
+    if (phy->IsStateSwitching()) {
+        Simulator::Schedule(phy->GetDelayUntilIdle(), &RadioOff, node, phy, generation);
+        return;
+    }
+    if (phy->IsStateSleep()) {
+        phy->ResumeFromSleep();
+    }
+    phy->SetOffMode();
+}
+
 /// Every Wi-Fi radio of the node off or back on (#288). Off, a crashed node
 /// neither receives nor acknowledges, so its neighbours see a lost link (the
 /// retry limit), as a power failure would show; a device that is not a
-/// WifiNetDevice keeps its radio. `flush` also empties the MAC's queues: what
-/// a crashed node had queued is lost with it.
-void SetRadios(Ptr<Node> node, bool on, bool flush) {
+/// WifiNetDevice keeps its radio. `flush` also empties the MAC's queues
+/// (DCF, the four EDCA ones, an AP's beacon queue): what a crashed node had
+/// queued is lost with it.
+void SetRadios(Ptr<Node> node, bool on, bool flush, uint64_t generation) {
     for (uint32_t d = 0; d < node->GetNDevices(); ++d) {
         Ptr<WifiNetDevice> dev = DynamicCast<WifiNetDevice>(node->GetDevice(d));
         if (!dev) {
@@ -64,31 +99,28 @@ void SetRadios(Ptr<Node> node, bool on, bool flush) {
         for (const Ptr<WifiPhy>& phy : dev->GetPhys()) {
             if (on) {
                 phy->ResumeFromOff();  // a no-op unless the radio is off
-            } else if (!phy->IsStateOff()) {
-                phy->SetOffMode();
+            } else {
+                RadioOff(node, phy, generation);
             }
         }
         Ptr<WifiMac> mac = dev->GetMac();
         if (!on && flush && mac) {
-            if (mac->GetQosSupported()) {
-                for (AcIndex ac : {AC_BE, AC_BK, AC_VI, AC_VO}) {
-                    mac->GetTxopQueue(ac)->Flush();
+            for (AcIndex ac : {AC_BE_NQOS, AC_BE, AC_BK, AC_VI, AC_VO, AC_BEACON}) {
+                if (Ptr<Txop> txop = mac->GetTxopFor(ac)) {
+                    txop->GetWifiMacQueue()->Flush();
                 }
-            } else if (Ptr<Txop> txop = mac->GetTxop()) {
-                txop->GetWifiMacQueue()->Flush();
             }
         }
     }
 }
 
-/// A shutdown's radio goes off after the grace, unless the node started again
-/// meanwhile (its interfaces are up).
-void RadiosOffAfterShutdown(Ptr<Node> node) {
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-    if (ipv4 && ipv4->GetNInterfaces() > 1 && ipv4->IsUp(1)) {
-        return;
+/// A shutdown's radio goes off after the grace, unless another lifecycle
+/// operation on the node came in between (a start, or a later shutdown,
+/// whose own grace then counts).
+void RadiosOffAfterShutdown(Ptr<Node> node, uint64_t generation) {
+    if (IsCurrent(node, generation)) {
+        SetRadios(node, false, false, generation);
     }
-    SetRadios(node, false, false);
 }
 
 }  // namespace
@@ -109,6 +141,7 @@ bool SwarmLifecycleHelper::ParseOp(const std::string& name, SwarmLifecycleOp& op
 void SwarmLifecycleHelper::Apply(Ptr<Node> node, SwarmLifecycleOp op) {
     NS_LOG_FUNCTION(node->GetId() << static_cast<int>(op));
     Ptr<SwarmRoutingBase> protocol = SwarmProtocolOf(node);
+    const uint64_t generation = NextGeneration(node);
     switch (op) {
     case SwarmLifecycleOp::Shutdown:
         if (protocol) {
@@ -116,17 +149,17 @@ void SwarmLifecycleHelper::Apply(Ptr<Node> node, SwarmLifecycleOp op) {
         }
         SetInterfaces(node, false);
         // The leaving control is queued in the MAC: the radio stays on to send it.
-        Simulator::Schedule(ShutdownRadioGrace(), &RadiosOffAfterShutdown, node);
+        Simulator::Schedule(ShutdownRadioGrace(), &RadiosOffAfterShutdown, node, generation);
         break;
     case SwarmLifecycleOp::Crash:
         if (protocol) {
             protocol->Crash();
         }
         SetInterfaces(node, false);
-        SetRadios(node, false, true);
+        SetRadios(node, false, true, generation);
         break;
     case SwarmLifecycleOp::Start:
-        SetRadios(node, true, false);
+        SetRadios(node, true, false, generation);
         SetInterfaces(node, true);  // then: the protocol's sockets come back with them
         if (protocol) {
             protocol->Start();

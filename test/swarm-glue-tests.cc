@@ -2265,9 +2265,11 @@ private:
 /// A crash switches the node's radio off (#288): n0 -> n1 -> n2 on Wi-Fi, all
 /// in range; the helper crashes n2 at 2 s. n1's next unicast to n2 hits the
 /// retry limit (OnDataUndelivered), where a radio left on would acknowledge it;
-/// after the start at 3 s delivery resumes. A shutdown at 4 s keeps the radio
-/// on for its grace: a frame at 4.02 s is acknowledged (and dropped above the
-/// MAC), one at 4.3 s is not. Returns n1's hook log and n2's deliveries.
+/// after the start at 3 s delivery resumes. A shutdown keeps the radio on for
+/// its grace, counted from the latest operation: shut down at 4 s, started at
+/// 4.05 s and shut down again at 4.075 s, n2 still acknowledges a frame at
+/// 4.12 s (and drops it above the MAC), after the first grace and inside the
+/// second; one at 4.3 s is not. Returns n1's hook log and n2's deliveries.
 std::string RunWifiCrash(uint32_t seed, uint32_t* undeliveredDuringCrash, uint32_t* delivered,
                          uint32_t* undeliveredAfterShutdown) {
     SwarmCoreSeed(seed);
@@ -2293,6 +2295,8 @@ std::string RunWifiCrash(uint32_t seed, uint32_t* undeliveredDuringCrash, uint32
     life.Schedule(Seconds(2.0), n2, SwarmLifecycleOp::Crash);
     life.Schedule(Seconds(3.0), n2, SwarmLifecycleOp::Start);
     life.Schedule(Seconds(4.0), n2, SwarmLifecycleOp::Shutdown);
+    life.Schedule(Seconds(4.05), n2, SwarmLifecycleOp::Start);
+    life.Schedule(Seconds(4.075), n2, SwarmLifecycleOp::Shutdown);
 
     std::vector<std::string> rx;
     Ptr<Socket> sink = Sink(n2, &rx);
@@ -2307,7 +2311,7 @@ std::string RunWifiCrash(uint32_t seed, uint32_t* undeliveredDuringCrash, uint32
         Toy(n0)->routes[n2a] = n1a;
         SendUdp(src, n2a, 100);
     });
-    Simulator::Schedule(Seconds(4.02), [&]() { SendUdp(src, n2a, 100); });  // radio still on
+    Simulator::Schedule(Seconds(4.12), [&]() { SendUdp(src, n2a, 100); });  // second grace
     Simulator::Schedule(Seconds(4.2), [&]() { atShutdown = Toy(n1)->undelivered.size(); });
     Simulator::Schedule(Seconds(4.3), [&]() {
         Toy(n1)->routes[n2a] = n2a;
