@@ -137,8 +137,7 @@ CI builds and tests the module on ns-3.49 on every pull request (the
 git clone --depth 1 --branch ns-3.49 https://gitlab.com/nsnam/ns-3-dev.git ns-3
 curl -LO https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v2.1.0/swarm-core-2.1.0.tar.gz
 curl -LO https://github.com/swarm-routing/swarm-adapter-ns3/releases/download/v2.1.0/SHA256SUMS
-sha256sum --check --ignore-missing SHA256SUMS
-tar -xzf swarm-core-2.1.0.tar.gz -C ns-3/contrib
+sha256sum --check --ignore-missing SHA256SUMS && tar -xzf swarm-core-2.1.0.tar.gz -C ns-3/contrib
 cd ns-3
 ./ns3 configure --enable-examples --enable-tests && ./ns3 build
 ./test.py -s swarm-core

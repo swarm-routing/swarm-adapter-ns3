@@ -6,7 +6,7 @@
 # it at /swarm-adapter-ns3/api/. INPUT is the public API: the module's model/
 # and helper/ headers (at the repository root, not under ns3/), with its own
 # main page; never tests/ or examples/.
-# Locally: PROJECT_VERSION=dev doxygen docs/api/Doxyfile
+# Locally: mkdir -p build/api && PROJECT_VERSION=dev doxygen docs/api/Doxyfile
 PROJECT_NAME           = "swarm-adapter-ns3"
 PROJECT_NUMBER         = $(PROJECT_VERSION)
 OUTPUT_DIRECTORY       = build/api
