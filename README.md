@@ -29,6 +29,11 @@ and link-metric seams, the testbench; namespace `swarm::core`,
 [swarm-routing/swarm-core](https://github.com/swarm-routing/swarm-core) since
 #231: this module builds on its release. CI runs every org quality gate.
 
+To install the module (your own ns-3 tree, vcpkg or a container image):
+[docs/install.md](docs/install.md); its class documentation:
+[docs/api/](docs/api/mainpage.md), published at
+<https://swarm-routing.github.io/swarm-adapter-ns3/api/>.
+
 How to work here, for people and AI agents alike: [AGENTS.md](AGENTS.md) has
 the rules and how to build and verify; the release plan is [docs/roadmap.md](docs/roadmap.md); the org conventions are in
 [CONTRIBUTING.md](https://github.com/swarm-routing/.github/blob/main/CONTRIBUTING.md).
