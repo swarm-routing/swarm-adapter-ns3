@@ -22,7 +22,8 @@ and collects each node's counters (`CollectStats`); the router observer
 (`IRouterObserver`), through which a protocol reports its control packets,
 route changes, data decisions and state size as trace sources; and
 `SwarmLifecycleHelper`, which scripts node shutdown, crash and restart the
-same way for every protocol. The simulator-agnostic C++23 primitives (visited
+same way for every protocol (a crash also switches the node's Wi-Fi radio
+off, so its neighbours see a lost link, #288). The simulator-agnostic C++23 primitives (visited
 path, little-endian wire helpers, pheromone table, route decision, link-state
 and link-metric seams, the testbench; namespace `swarm::core`,
 `MIT OR GPL-2.0-only`) live in

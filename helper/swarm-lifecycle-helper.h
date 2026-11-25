@@ -12,6 +12,17 @@
 // interfaces down (Ipv4::SetDown) and back up (SetUp), so a stock protocol in
 // the same scenario sees the same failure through ns-3's own path.
 //
+// Radios (#288): a crash also switches every Wi-Fi radio of the node off
+// (WifiPhy::SetOffMode) and empties its MAC queues, so the node neither
+// receives nor acknowledges and its neighbours see a lost link: the retry
+// limit, WifiLinkMonitor's LinkFailure, SwarmRoutingBase::OnDataUndelivered,
+// and the same for a stock protocol's link-layer feedback. A shutdown switches
+// them off 100 ms later (a repo choice: many frames at
+// 802.11a's 6 Mb/s), so the leaving control the protocol
+// queued goes out first, unless the node started again in between. A start
+// switches them on (ResumeFromOff) before the interfaces come up. A device
+// that is not a WifiNetDevice keeps its radio on, as before.
+//
 //   SwarmLifecycleHelper life;
 //   life.Schedule(Seconds(20), nodes.Get(3), SwarmLifecycleOp::Crash);
 //   life.Schedule(Seconds(40), nodes.Get(3), SwarmLifecycleOp::Start);
@@ -54,7 +65,8 @@ public:
     uint32_t ScheduleFile(const std::string& path, const NodeContainer& nodes) const;
 
     /// Runs `op` on `node` now: the protocol's lifecycle when it is a
-    /// SwarmRoutingBase, and the node's routed interfaces down or up.
+    /// SwarmRoutingBase, the node's routed interfaces down or up, and its
+    /// Wi-Fi radios off or on (a shutdown's 100 ms later).
     static void Apply(Ptr<Node> node, SwarmLifecycleOp op);
 
     /// "start", "shutdown" or "crash"; false for anything else.
