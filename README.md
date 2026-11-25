@@ -56,7 +56,13 @@ A module that used to find swarm-core's primitives at
 directory exists) drops that: the directory is gone, and the link above
 replaces it. To build against an unreleased swarm-core, pass its `core/` to
 the configure step: `./ns3 configure ... -- -DSWARM_CORE_DIR=<swarm-core
-checkout>/core`. The lock moves only to a published release, written by
+checkout>/core`. With `-DSWARM_CORE_FROM_PACKAGE=ON` it links the installed
+`swarm-core` CMake package instead and builds nothing of swarm-core: the
+vcpkg port `swarm-adapter-ns3` builds this module that way, on the
+`swarm-core` and `ns3` ports
+([swarm-routing/vcpkg-registry](https://github.com/swarm-routing/vcpkg-registry),
+x64-linux; each release opens its port bump, `vcpkg-ports` in
+`release.yml`). The lock moves only to a published release, written by
 swarm-routing/.github `tools/checks/release_lock.py`; swarm-routing/.github
 CONTRIBUTING "Dependencies" has the convention.
 

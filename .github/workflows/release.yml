@@ -17,7 +17,10 @@ name: Release
 # ns3-swarm-core and v0.1.0, v0.2.0 in ns3-swarm-core-ns3, both deprecated and
 # frozen, deleted once the swarm-core migration completes: #255)
 # with the module built in (CONTRIBUTING "Images"). The `swarm-core` vcpkg
-# port follows swarm-routing/swarm-core's releases, not this module's (#231).
+# port follows swarm-routing/swarm-core's releases, not this module's (#231);
+# this module's port is `swarm-adapter-ns3` (on the ns3 and swarm-core ports,
+# swarm-routing/vcpkg-registry#76): `vcpkg-ports` opens its bump PR in
+# swarm-routing/vcpkg-registry after each release (swarm-routing/.github#439).
 # A dry run also builds and tests swarm-core's consumers (the four protocols
 # and AntHocNet, .github/downstream.txt) against the commit, report-only
 # (`downstream-consumers`, swarm-routing/.github#482).
@@ -60,6 +63,8 @@ jobs:
       # a dry run builds the protocols and AntHocNet against this commit,
       # report-only (.github/downstream.txt, swarm-routing/.github#482)
       downstream-consumers: .github/downstream.txt
+      # the module's vcpkg port, bumped from each release (swarm-routing/.github#881)
+      vcpkg-ports: swarm-adapter-ns3
     secrets:
       BOT_APP_ID: ${{ secrets.BOT_APP_ID }}
       BOT_APP_PRIVATE_KEY: ${{ secrets.BOT_APP_PRIVATE_KEY }}

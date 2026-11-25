@@ -25,7 +25,9 @@ still gives both).
 
 ```
 CMakeLists.txt      reads swarm-core.lock, fetches the release tarball (FetchContent URL + URL_HASH, SOURCE_SUBDIR core;
-                    -DSWARM_CORE_DIR=<checkout>/core for a local swarm-core), links swarm::core PUBLIC, writes the
+                    -DSWARM_CORE_DIR=<checkout>/core for a local swarm-core; -DSWARM_CORE_FROM_PACKAGE=ON for the
+                    installed swarm-core package, as the vcpkg port swarm-adapter-ns3 builds it outside an ns-3 tree,
+                    swarm-routing/vcpkg-registry#76), links swarm::core PUBLIC, writes the
                     ns3/<name>.h stubs of its headers, build_lib(LIBNAME swarm-core ...); ns-3 generates
                     ns3/swarm-core-module.h
 swarm-core.lock     the swarm-routing/swarm-core release (repo, tag, commit, version, asset, SHA256), written by
