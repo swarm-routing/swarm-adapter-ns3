@@ -36,6 +36,16 @@ module passes them on to every module that links `${libswarm-core}`.
 "through the base" means the protocol uses the piece only through
 `SwarmRoutingBase`, which owns one.
 
+`SwarmLifecycleHelper` switches radios too (#288): a crash turns every Wi-Fi
+radio of the node off (`WifiPhy::SetOffMode`) and empties its MAC queues, so
+its neighbours see a lost link (the retry limit, `WifiLinkMonitor`'s
+`LinkFailure`, `OnDataUndelivered`, a stock protocol's link-layer feedback);
+a shutdown turns them off 100 ms after the latest lifecycle operation on the
+node, so its leaving control goes out; a start turns them on before the
+interfaces come up. Before #288 the radio stayed on and kept acknowledging,
+so crash results on Wi-Fi from an earlier release differ: compare crash
+scenarios only within one release.
+
 ## Pieces without two users
 
 Counting rule: a protocol counts as a user when its `core/` or `ns3/` uses

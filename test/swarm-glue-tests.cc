@@ -2262,6 +2262,103 @@ private:
     }
 };
 
+/// A crash switches the node's radio off (#288): n0 -> n1 -> n2 on Wi-Fi, all
+/// in range; the helper crashes n2 at 2 s. n1's next unicast to n2 hits the
+/// retry limit (OnDataUndelivered), where a radio left on would acknowledge it;
+/// after the start at 3 s delivery resumes. A shutdown keeps the radio on for
+/// its grace, counted from the latest operation: shut down at 4 s, started at
+/// 4.05 s and shut down again at 4.075 s, n2 still acknowledges a frame at
+/// 4.12 s (and drops it above the MAC), after the first grace and inside the
+/// second; one at 4.3 s is not. Returns n1's hook log and n2's deliveries.
+std::string RunWifiCrash(uint32_t seed, uint32_t* undeliveredDuringCrash, uint32_t* delivered,
+                         uint32_t* undeliveredAfterShutdown) {
+    SwarmCoreSeed(seed);
+    NodeContainer nodes;
+    nodes.Create(3);
+    NetDeviceContainer devs = AdhocWifi(nodes, 50.0);
+    SwarmRoutingHelper toy("ns3::swarmtest::ToyProtocol");
+    toy.Install(nodes);
+    toy.AssignStreams(nodes, 0);
+    InternetStackHelper().AssignStreams(nodes, 100);  // ARP's request jitter
+    Ipv4AddressHelper a;
+    a.SetBase("10.1.1.0", "255.255.255.0");
+    a.Assign(devs);
+    WifiHelper::AssignStreams(devs, 10);
+    Ptr<Node> n0 = nodes.Get(0);
+    Ptr<Node> n1 = nodes.Get(1);
+    Ptr<Node> n2 = nodes.Get(2);
+    const Ipv4Address n1a = Addr(n1, 1);
+    const Ipv4Address n2a = Addr(n2, 1);
+    Toy(n0)->routes[n2a] = n1a;
+    Toy(n1)->routes[n2a] = n2a;
+    SwarmLifecycleHelper life;
+    life.Schedule(Seconds(2.0), n2, SwarmLifecycleOp::Crash);
+    life.Schedule(Seconds(3.0), n2, SwarmLifecycleOp::Start);
+    life.Schedule(Seconds(4.0), n2, SwarmLifecycleOp::Shutdown);
+    life.Schedule(Seconds(4.05), n2, SwarmLifecycleOp::Start);
+    life.Schedule(Seconds(4.075), n2, SwarmLifecycleOp::Shutdown);
+
+    std::vector<std::string> rx;
+    Ptr<Socket> sink = Sink(n2, &rx);
+    Ptr<Socket> src = Source(n0);
+    uint32_t atCrash = 0;
+    uint32_t atShutdown = 0;
+    Simulator::Schedule(Seconds(0.5), [&]() { SendUdp(src, n2a, 100); });  // ARP warm-up
+    Simulator::Schedule(Seconds(2.1), [&]() { SendUdp(src, n2a, 100); });  // n2 crashed
+    Simulator::Schedule(Seconds(2.9), [&]() { atCrash = Toy(n1)->undelivered.size(); });
+    Simulator::Schedule(Seconds(3.5), [&]() {
+        Toy(n1)->routes[n2a] = n2a;  // the toy's failure path dropped the route
+        Toy(n0)->routes[n2a] = n1a;
+        SendUdp(src, n2a, 100);
+    });
+    Simulator::Schedule(Seconds(4.12), [&]() { SendUdp(src, n2a, 100); });  // second grace
+    Simulator::Schedule(Seconds(4.2), [&]() { atShutdown = Toy(n1)->undelivered.size(); });
+    Simulator::Schedule(Seconds(4.3), [&]() {
+        Toy(n1)->routes[n2a] = n2a;
+        Toy(n0)->routes[n2a] = n1a;
+        SendUdp(src, n2a, 100);  // radio off
+    });
+    Simulator::Stop(Seconds(5));
+    Simulator::Run();
+    *undeliveredDuringCrash = atCrash;
+    *delivered = rx.size();
+    *undeliveredAfterShutdown = Toy(n1)->undelivered.size() - atShutdown;
+    std::string log;
+    for (const auto& l : Toy(n1)->txLog) {
+        log += l + "; ";
+    }
+    for (const auto& l : rx) {
+        log += l + "; ";
+    }
+    const bool shutdownHeld = atShutdown == atCrash;
+    Simulator::Destroy();
+    return log + (shutdownHeld ? "held" : "lost");
+}
+
+class LifecycleRadioTestCase : public TestCase {
+public:
+    LifecycleRadioTestCase()
+        : TestCase("glue: a crash switches the Wi-Fi radio off, so the sender sees the "
+                   "failure; a start switches it back on; a shutdown after its grace") {}
+
+private:
+    void DoRun() override {
+        uint32_t crash = 0;
+        uint32_t delivered = 0;
+        uint32_t shutdown = 0;
+        const std::string first = RunWifiCrash(1, &crash, &delivered, &shutdown);
+        NS_TEST_EXPECT_MSG_EQ(crash, 1u, "the frame to the crashed node hit the retry limit");
+        NS_TEST_EXPECT_MSG_EQ(delivered, 2u, "the warm-up and the packet after the start");
+        NS_TEST_EXPECT_MSG_EQ(first.substr(first.size() - 4), std::string("held"),
+                              "within the shutdown's grace the radio acknowledged");
+        NS_TEST_EXPECT_MSG_EQ(shutdown, 1u, "after the grace the radio is off");
+        uint32_t c2 = 0;
+        uint32_t d2 = 0;
+        uint32_t s2 = 0;
+        NS_TEST_EXPECT_MSG_EQ(RunWifiCrash(1, &c2, &d2, &s2), first, "byte-identical rerun");
+    }
+};
+
 /// OnTxFailure (#128): one call per retry-limit drop, for a data frame with
 /// its datagram and for a control frame without; the default keeps the
 /// OnLinkFailure + OnDataUndelivered sequence, an override replaces it.
@@ -2841,6 +2938,7 @@ std::vector<TestCase*> MakeGlueTestCases() {
             new ObserverTestCase,
             new LifecycleTestCase,
             new LifecycleHelperTestCase,
+            new LifecycleRadioTestCase,
             new DeterminismTestCase};
 }
 
