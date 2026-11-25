@@ -1,3 +1,9 @@
+## v2.1.0 (2026-11-25)
+
+### Feat
+
+- **packaging**: build on the installed swarm-core package and open the vcpkg port bump on release (#283)
+
 ## v2.0.0 (2026-11-24)
 
 ### BREAKING CHANGE
