@@ -8,6 +8,7 @@
 
 #include "swarm-energy-metric-hook.h"
 #include "swarm-isl-link-monitor.h"
+#include "swarm-mobility-location-provider.h"
 #include "swarm-wifi-link-monitor.h"
 
 #include "ns3/boolean.h"
@@ -221,10 +222,13 @@ void SwarmRoutingBase::RefreshPorts() const {
     static const NullLinkQuality kNullLinkQuality;
     static const NullNeighborProvider kNullNeighbors;
     static const NullEnergy kNullEnergy;
+    static const swarm::core::NullLocationProvider kNullLocation;
     Ptr<Node> node = NodeOf();
     Ptr<WifiLinkMonitor> wifi = node ? node->GetObject<WifiLinkMonitor>() : nullptr;
     Ptr<IslLinkMonitor> isl = node ? node->GetObject<IslLinkMonitor>() : nullptr;
     Ptr<EnergyMetricHook> hook = node ? node->GetObject<EnergyMetricHook>() : nullptr;
+    Ptr<MobilityLocationProvider> location =
+        node ? node->GetObject<MobilityLocationProvider>() : nullptr;
     m_linkStatePort = wifi  ? static_cast<const swarm::core::ILinkState*>(PeekPointer(wifi))
                       : isl ? static_cast<const swarm::core::ILinkState*>(PeekPointer(isl))
                             : &kNullLinkState;
@@ -234,6 +238,10 @@ void SwarmRoutingBase::RefreshPorts() const {
                           : &kNullNeighbors;
     m_energyPort =
         hook ? static_cast<const swarm::core::IEnergy*>(PeekPointer(hook)) : &kNullEnergy;
+    m_energyProvider.SetEnergy(m_energyPort);
+    m_locationPort = location
+                         ? static_cast<const swarm::core::ILocationProvider*>(PeekPointer(location))
+                         : &kNullLocation;
     // Without a node yet, look again next time: SetIpv4 has not run.
     m_portsStale = !node;
 }
@@ -274,6 +282,20 @@ const swarm::core::IEnergy& SwarmRoutingBase::Energy() const {
         RefreshPorts();
     }
     return *m_energyPort;
+}
+
+const swarm::core::IEnergyProvider& SwarmRoutingBase::EnergyProvider() const {
+    if (m_portsStale) {
+        RefreshPorts();
+    }
+    return m_energyProvider;
+}
+
+const swarm::core::ILocationProvider& SwarmRoutingBase::Location() const {
+    if (m_portsStale) {
+        RefreshPorts();
+    }
+    return *m_locationPort;
 }
 
 // --- the router observer ------------------------------------------------------------

@@ -31,9 +31,10 @@ namespace ns3 {
 
 /// Installs the monitors that apply to a node: a WifiLinkMonitor when it has a
 /// wifi device, an IslLinkMonitor when it has a point-to-point device, an
-/// EnergyMetricHook when an energy source is aggregated to it. A monitor the
-/// node already has is kept, so calling it again (say, after the energy
-/// sources are installed) only adds what is missing.
+/// EnergyMetricHook when an energy source is aggregated to it, a
+/// MobilityLocationProvider when a mobility model is (#232; read-only). A
+/// monitor the node already has is kept, so calling it again (say, after the
+/// energy sources are installed) only adds what is missing.
 class SwarmMonitorHelper {
 public:
     /// Returns the number of monitors installed.

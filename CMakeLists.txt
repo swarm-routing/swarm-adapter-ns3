@@ -104,6 +104,7 @@ build_lib(
     model/swarm-deferred-packet-queue.cc
     model/swarm-energy-metric-hook.cc
     model/swarm-isl-link-monitor.cc
+    model/swarm-mobility-location-provider.cc
     model/swarm-ns3-ports.cc
     model/swarm-routing-base.cc
     model/swarm-wifi-link-monitor.cc
@@ -115,6 +116,7 @@ build_lib(
     model/swarm-deferred-packet-queue.h
     model/swarm-energy-metric-hook.h
     model/swarm-isl-link-monitor.h
+    model/swarm-mobility-location-provider.h
     model/swarm-ns3-ports.h
     model/swarm-routing-base.h
     model/swarm-wifi-link-monitor.h
