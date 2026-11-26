@@ -1,3 +1,21 @@
+## v2.2.0 (2026-11-26)
+
+### BREAKING CHANGE
+
+- `ns3::MobilityLocationProvider` and
+`ns3::SwarmRoutingBase::Location()` leave the frozen API and become
+experimental (outside the SemVer promise, docs/api-policy.md
+"Experimental"). No released version contained them (added after v2.0.0
+by #293), so no released consumer is affected.
+
+### Feat
+
+- **adapter**: ns-3 energy and location providers for swarm-core's new ports (#293)
+
+### Refactor
+
+- **api**: mark the location provider experimental (#310)
+
 ## v2.1.1 (2026-11-25)
 
 ### Fix
