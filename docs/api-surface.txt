@@ -15,6 +15,7 @@ experimental attribute ns3::IslLinkMonitor::TrustAfterFailure initial=BooleanVal
 experimental attribute ns3::SwarmRoutingBase::IslHelloSuppression initial=BooleanValue(false) checker=MakeBooleanChecker()
 experimental ns3 alias ns3::IslLinkMonitor::LinkChangeCallback (public) = void (*)(Ipv4Address, bool)
 experimental ns3 class ns3::IslLinkMonitor : public Object, public swarm::core::INeighborProvider, public swarm::core::ILinkState
+experimental ns3 class ns3::MobilityLocationProvider : public Object, public swarm::core::ILocationProvider
 experimental ns3 function ns3::IslLinkMonitor::DoDispose protected: void ()
 experimental ns3 function ns3::IslLinkMonitor::GetTypeId public static: TypeId ()
 experimental ns3 function ns3::IslLinkMonitor::Install public: void (Ptr<Node>)
@@ -25,12 +26,19 @@ experimental ns3 function ns3::IslLinkMonitor::PeerOnInterface public: Ipv4Addre
 experimental ns3 function ns3::IslLinkMonitor::macQueueLength public: int (swarm::core::NodeAddress) const
 experimental ns3 function ns3::IslLinkMonitor::macServiceTime public: swarm::core::Time (swarm::core::NodeAddress) const
 experimental ns3 function ns3::IslLinkMonitor::neighbors public: std::vector<swarm::core::NodeAddress> () const
+experimental ns3 function ns3::MobilityLocationProvider::DoDispose protected: void ()
+experimental ns3 function ns3::MobilityLocationProvider::GetTypeId public static: TypeId ()
+experimental ns3 function ns3::MobilityLocationProvider::Install public: bool (Ptr<Node>)
+experimental ns3 function ns3::MobilityLocationProvider::Install public: void (Ptr<MobilityModel>)
+experimental ns3 function ns3::MobilityLocationProvider::pose public: std::optional<swarm::core::GeoPose> () const
 experimental ns3 function ns3::SwarmRoutingBase::BeaconSuppressed protected: bool (uint32_t) const
 experimental ns3 function ns3::SwarmRoutingBase::IsLinkStateNeighbor protected: bool (Ipv4Address) const
+experimental ns3 function ns3::SwarmRoutingBase::Location protected: const swarm::core::ILocationProvider &() const
 experimental ns3 function ns3::SwarmRoutingBase::OnLinkUp protected virtual: void (Ipv4Address)
 experimental trace ns3::IslLinkMonitor::LinkChange callback=ns3::IslLinkMonitor::LinkChangeCallback
 experimental trace ns3::IslLinkMonitor::PeerLinkChange callback=ns3::IslLinkMonitor::LinkChangeCallback
 experimental typeid ns3::IslLinkMonitor parent=Object group=SwarmCore constructor=yes
+experimental typeid ns3::MobilityLocationProvider parent=Object group=SwarmCore constructor=yes
 ns3 alias ns3::DeferredPacketQueue::DropCallback (public) = void (*)(Ptr<const Packet>, const Ipv4Header &, DeferredDropReason)
 ns3 alias ns3::SwarmRoutingBase::ControlRxTracedCallback (public) = void (*)(uint8_t, uint32_t)
 ns3 alias ns3::SwarmRoutingBase::ControlTxTracedCallback (public) = void (*)(uint8_t, bool, uint32_t)
@@ -44,7 +52,6 @@ ns3 alias ns3::WifiLinkMonitor::UndeliveredCallback (public) = void (*)(Ptr<cons
 ns3 class ns3::BufferWireWriter : public swarm::core::WireFields<BufferWireWriter>
 ns3 class ns3::DeferredPacketQueue : public Object
 ns3 class ns3::EnergyMetricHook : public Object, public swarm::core::IEnergy
-ns3 class ns3::MobilityLocationProvider : public Object, public swarm::core::ILocationProvider
 ns3 class ns3::NullEnergy : public swarm::core::IEnergy
 ns3 class ns3::NullLinkQuality : public swarm::core::ILinkQuality
 ns3 class ns3::NullLinkState : public swarm::core::ILinkState
@@ -124,11 +131,6 @@ ns3 function ns3::EnergyMetricHook::GetTypeId public static: TypeId ()
 ns3 function ns3::EnergyMetricHook::Install public: bool (Ptr<Node>)
 ns3 function ns3::EnergyMetricHook::Install public: void (Ptr<energy::EnergySource>)
 ns3 function ns3::EnergyMetricHook::residualEnergyFraction public: double () const
-ns3 function ns3::MobilityLocationProvider::DoDispose protected: void ()
-ns3 function ns3::MobilityLocationProvider::GetTypeId public static: TypeId ()
-ns3 function ns3::MobilityLocationProvider::Install public: bool (Ptr<Node>)
-ns3 function ns3::MobilityLocationProvider::Install public: void (Ptr<MobilityModel>)
-ns3 function ns3::MobilityLocationProvider::pose public: std::optional<swarm::core::GeoPose> () const
 ns3 function ns3::NullEnergy::residualEnergyFraction public: double () const
 ns3 function ns3::NullLinkQuality::sinrDbFrom public: double (swarm::core::NodeAddress) const
 ns3 function ns3::NullLinkState::macQueueLength public: int (swarm::core::NodeAddress) const
@@ -192,7 +194,6 @@ ns3 function ns3::SwarmRoutingBase::IsMyAddress protected: bool (Ipv4Address) co
 ns3 function ns3::SwarmRoutingBase::KindName public: std::string (uint8_t) const
 ns3 function ns3::SwarmRoutingBase::LinkQuality protected: const swarm::core::ILinkQuality &() const
 ns3 function ns3::SwarmRoutingBase::LinkState protected: const swarm::core::ILinkState &() const
-ns3 function ns3::SwarmRoutingBase::Location protected: const swarm::core::ILocationProvider &() const
 ns3 function ns3::SwarmRoutingBase::MainAddress protected: Ipv4Address () const
 ns3 function ns3::SwarmRoutingBase::Neighbors protected: const swarm::core::INeighborProvider &() const
 ns3 function ns3::SwarmRoutingBase::NotifyAddAddress public: void (uint32_t, Ipv4InterfaceAddress)
@@ -275,7 +276,6 @@ trace ns3::WifiLinkMonitor::TxFailure callback=ns3::WifiLinkMonitor::TxFailureCa
 trace ns3::WifiLinkMonitor::Undelivered callback=ns3::WifiLinkMonitor::UndeliveredCallback
 typeid ns3::DeferredPacketQueue parent=Object group=SwarmCore constructor=yes
 typeid ns3::EnergyMetricHook parent=Object group=SwarmCore constructor=yes
-typeid ns3::MobilityLocationProvider parent=Object group=SwarmCore constructor=yes
 typeid ns3::SwarmPrevHopTag parent=Tag group=SwarmCore constructor=yes
 typeid ns3::SwarmRoutingBase parent=Ipv4RoutingProtocol group=SwarmCore constructor=no
 typeid ns3::WifiLinkMonitor parent=Object group=SwarmCore constructor=yes
