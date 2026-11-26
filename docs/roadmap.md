@@ -27,6 +27,7 @@ this plan is a live query rather than a diagram that drifts:
 | v1.0.0 | [`release:v1.0.0`](https://github.com/swarm-routing/ns3-swarm-core/issues?q=is%3Aopen+label%3A%22release%3Av1.0.0%22) |
 | v2.0.0 | [`release:v2.0.0`](https://github.com/swarm-routing/swarm-adapter-ns3/issues?q=is%3Aopen+label%3A%22release%3Av2.0.0%22) |
 | v2.1.0 | [`release:v2.1.0`](https://github.com/swarm-routing/swarm-adapter-ns3/issues?q=is%3Aopen+label%3A%22release%3Av2.1.0%22) |
+| v2.2.0 | [`release:v2.2.0`](https://github.com/swarm-routing/swarm-adapter-ns3/issues?q=is%3Aopen+label%3A%22release%3Av2.2.0%22) |
 | v3.0.0 (planned) | epic swarm-routing/swarm-core#62 (moved from [#82](https://github.com/swarm-routing/swarm-adapter-ns3/issues/82)) and its sub-issues (no `release:v3.0.0` label in the org taxonomy yet) |
 | all epics | [`epic`](https://github.com/swarm-routing/ns3-swarm-core/issues?q=is%3Aopen+label%3Aepic) |
 
@@ -51,9 +52,10 @@ flowchart LR
     V10["<b>v1.0.0</b><br/>API frozen<br/>shipped 2026-11-16"]
     V20["<b>v2.0.0</b><br/>on swarm-core's<br/>release, core/ out<br/>shipped 2026-11-24"]
     V21["<b>v2.1.0</b><br/>the vcpkg<br/>port"]
+    V22["<b>v2.2.0</b><br/>ns-3 providers<br/>for the new ports"]
     V30["<b>v3.0.0</b> (planned)<br/>the host<br/>contract"]
 
-    V01 --> V02 --> V03 --> V04 --> V10 --> V20 --> V21 --> V30
+    V01 --> V02 --> V03 --> V04 --> V10 --> V20 --> V21 --> V22 --> V30
 
     style V01 fill:#e2f0ed,stroke:#0f7f70,stroke-width:2px
     style V02 fill:#e2f0ed,stroke:#0f7f70,stroke-width:2px
@@ -62,6 +64,7 @@ flowchart LR
     style V10 fill:#e2f0ed,stroke:#0f7f70,stroke-width:2px
     style V20 fill:#e2f0ed,stroke:#0f7f70,stroke-width:2px
     style V21 fill:#fdf0dc,stroke:#b7791f,stroke-width:2px
+    style V22 fill:#fdf0dc,stroke:#b7791f,stroke-width:2px
     style V30 fill:#fdf0dc,stroke:#b7791f,stroke-width:2px
 ```
 
@@ -170,6 +173,7 @@ record of swarm-core's part:
 | **v2.0.0** "on swarm-core's release" (shipped 2026-11-24, on the maintainer's word, decision 3 of 2026-11-22, epic [#228](https://github.com/swarm-routing/swarm-adapter-ns3/issues/228)) | The ns-3 module builds on the swarm-routing/swarm-core release `swarm-core.lock` names, `swarm::core` a `PUBLIC` dependency, and `core/` removed here ([#231](https://github.com/swarm-routing/swarm-adapter-ns3/issues/231); swarm-core's first release, swarm-routing/swarm-core#3). **Exit:** `ns3-build-contrib --strict-warnings --test swarm-core=...` green on debug and sanitized with `core/` from swarm-core's release; the determinism gate unchanged (`swarm-core-seed` byte-identical to v1.0.0's); ARA, BeeAdHoc, Termite, HOPNET and AntHocNet ns-3 builds green against it (their canary runs linked), each having dropped its `contrib/swarm-core/core` path; `kSwarmCoreApiVersion` decided at the release ([`api-policy.md`](api-policy.md)). The module name stays `swarm-core` (golden rule 4). **Met:** [#231](https://github.com/swarm-routing/swarm-adapter-ns3/issues/231) closed 2026-11-24 with the evidence (#258, #260; ARA, BeeAdHoc, Termite and HOPNET's canary runs linked there; AntHocNet has no canary leg by design, swarm-routing/.github#411: it was built and tested locally in `ns3-dev:3.48` against `main` and v1.0.0, and the `consumers` job, #262, covers it); `kSwarmCoreApiVersion` stays 2, as no name or signature changed (maintainer decision 2026-11-23). |
 | **v2.1.0** "the vcpkg port" (maintainer decision 2026-11-25, swarm-routing/.github#881) | The module builds on the installed `swarm-core` CMake package (`-DSWARM_CORE_FROM_PACKAGE=ON`, off by default; [#283](https://github.com/swarm-routing/swarm-adapter-ns3/pull/283), issue [#282](https://github.com/swarm-routing/swarm-adapter-ns3/issues/282)), so swarm-routing/vcpkg-registry's `swarm-adapter-ns3` port can build it on the `ns3` and `swarm-core` ports, and `release.yml` sets `vcpkg-ports: swarm-adapter-ns3`. **Exit:** the default build unchanged (CI green on debug and sanitized, the determinism gate as v2.0.0's); `kSwarmCoreApiVersion` stays 2 (no API change); after the release, the port bump PR it opens in swarm-routing/vcpkg-registry installs the port on x64-linux and its consumer links `ns3::swarm-core`. |
 | **v2.1.1** "a crash takes the radio down" (patch; maintainer decision 2026-11-25) | `fix(helper)`: a crash switches the node's wi-fi radio off, so stock arms see the same failure as the protocol ([#292](https://github.com/swarm-routing/swarm-adapter-ns3/pull/292); closes [#288](https://github.com/swarm-routing/swarm-adapter-ns3/issues/288)). **Exit:** #292 merged, `ci` and `api-surface` green on `main`; no API change (`kSwarmCoreApiVersion` stays 2, `api-surface.txt` unchanged), `swarm-core.lock` stays v2.0.0. |
+| **v2.2.0** "ns-3 providers for swarm-core's new ports" (minor; maintainer decision 2026-11-26) | `feat(adapter)`: `SwarmEnergyProvider` (`IEnergyProvider` over `IEnergy`) and the experimental `MobilityLocationProvider` with `SwarmRoutingBase::Location()` ([#293](https://github.com/swarm-routing/swarm-adapter-ns3/pull/293), part of [#232](https://github.com/swarm-routing/swarm-adapter-ns3/issues/232)); unblocks swarm-routing/BeeAdHoc#277. A **minor, not the major** Commitizen computes from [#310](https://github.com/swarm-routing/swarm-adapter-ns3/pull/310)'s `!` (`refactor(api)!: mark the location provider experimental`): the items #310 marks came in #293, after v2.1.1, so no released version contained them and marking them breaks no consumer ([`api-policy.md`](api-policy.md) "Experimental"); `release.yml` is dispatched with `increment: MINOR`. **Exit:** #293 and #310 merged, `ci` and `api-surface` green on `main`; `kSwarmCoreApiVersion` stays 2; no open `release:v2.2.0` issue. |
 | **v3.0.0** "the host contract" (**planned**; maintainer decision 2026-11-24, swarm-routing/swarm-core#11) | One contract every protocol core is driven through on any host, ns-3 or not: a node-driver contract ([#71](https://github.com/swarm-routing/swarm-adapter-ns3/issues/71)), `NodeAddress` as an opaque node id ([#72](https://github.com/swarm-routing/swarm-adapter-ns3/issues/72), [ADR-0002](adr/0002-node-address-is-an-opaque-node-id.md)), link signals as one port with fallbacks ([#73](https://github.com/swarm-routing/swarm-adapter-ns3/issues/73)), with data forwarded in user space off ns-3 ([ADR-0003](adr/0003-forward-data-in-user-space-off-ns3.md)); epic [#82](https://github.com/swarm-routing/swarm-adapter-ns3/issues/82). A major in step with swarm-routing/swarm-core v3.0.0, which carries the ports; the issues moved there on 2026-11-24 (swarm-routing/swarm-core#11): #71, #72, #73 and #82 are swarm-routing/swarm-core#59, #60, #61 and #62. Open question: whether an IPv6 adapter on ns-3 belongs to it ([#191](https://github.com/swarm-routing/swarm-adapter-ns3/issues/191)). |
 
 Issue state, read from the tracker on 2026-11-24: #38 is closed (v0.1.0);
