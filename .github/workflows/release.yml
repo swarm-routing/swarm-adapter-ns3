@@ -7,6 +7,8 @@ name: Release
 #   dispatch `dry-run`  bump, build, attest and verify on the runner only;
 #   dispatch `bump`     open the PR `chore(release): bump version A to B`
 #                       from bot/release (Commitizen, .cz.toml);
+#   dispatch `publish`  with `sha`: release a bump that already merged (a push
+#                       whose release never ran, swarm-routing/.github#943);
 #   merge that PR       the release: `make dist` builds and checks the asset
 #                       (swarm-core-<ver>.tar.gz, the ns-3 module;
 #                       tools/release/dist.sh), then
@@ -28,9 +30,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "dry-run: bump, build, attest and verify on the runner only; bump: open the bump PR (merging it releases); release-notes: re-render the notes of the release `tag` from CHANGELOG.md"
+        description: "dry-run: bump, build, attest and verify on the runner only; bump: open the bump PR (merging it releases); release-notes: re-render the notes of the release `tag` from CHANGELOG.md; publish: release the already-merged bump commit `sha` (swarm-routing/.github#943)"
         type: choice
-        options: [dry-run, bump, release-notes]
+        options: [dry-run, bump, release-notes, publish]
         default: dry-run
       increment:
         description: "auto: the bump Commitizen reads from the commits; PATCH, MINOR or MAJOR force it (MAJOR releases 1.0.0, docs/api-policy.md \"Freezing\")"
@@ -39,6 +41,10 @@ on:
         default: auto
       tag:
         description: "release-notes only: the existing release whose notes are re-rendered, vX.Y.Z (swarm-routing/.github#524)"
+        type: string
+        default: ''
+      sha:
+        description: "publish only: the full SHA of the merged bump commit to release (swarm-routing/.github#943)"
         type: string
         default: ''
   push:
@@ -53,13 +59,15 @@ concurrency:
 jobs:
   release:
     # Saves a runner on ordinary pushes; the workflow itself checks the PR.
-    if: "${{ github.event_name != 'push' || startsWith(github.event.head_commit.message, 'chore(release): bump version ') }}"
+    # Any commit of the push may be the bump (a merge queue batches them).
+    if: "${{ github.event_name != 'push' || contains(toJSON(github.event.commits.*.message), 'chore(release): bump version ') }}"
     permissions: { contents: write, pull-requests: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@10d9057fc3bcd21f39be701885929db4c056e6f8 # main@2026-11-25
+    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@35891e64b7ad5bea0c7aba1292518fc2484e4a82 # main@2026-11-26
     with:
       mode: ${{ inputs.mode }}   # empty on push: release
       increment: ${{ inputs.increment != 'auto' && inputs.increment || '' }}  # '' on push and for auto (swarm-routing/.github#211)
       tag: ${{ inputs.tag }}   # release-notes only; '' on push (swarm-routing/.github#524)
+      sha: ${{ inputs.sha }}   # publish only; '' on push (swarm-routing/.github#943)
       # a dry run builds the protocols and AntHocNet against this commit,
       # report-only (.github/downstream.txt, swarm-routing/.github#482)
       downstream-consumers: .github/downstream.txt
@@ -72,9 +80,10 @@ jobs:
 
   image:
     needs: release
-    if: ${{ needs.release.outputs.mode == 'release' }}
+    # a manual `publish` releases too, so it builds the image as well
+    if: ${{ needs.release.outputs.mode == 'release' || needs.release.outputs.mode == 'publish' }}
     permissions: { contents: read, packages: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@10d9057fc3bcd21f39be701885929db4c056e6f8 # main@2026-11-25
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@35891e64b7ad5bea0c7aba1292518fc2484e4a82 # main@2026-11-26
     with:
       modules: swarm-core=.
       image: swarm-adapter-ns3

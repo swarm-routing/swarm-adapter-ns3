@@ -1,3 +1,9 @@
+## v2.1.1 (2026-11-25)
+
+### Fix
+
+- **helper**: a crash switches the node's wi-fi radio off (#292)
+
 ## v2.1.0 (2026-11-25)
 
 ### Feat
