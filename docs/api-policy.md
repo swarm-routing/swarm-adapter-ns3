@@ -108,6 +108,7 @@ that uses one. A consumer that relies on one pins a release.
 | `FuzzyMetric`, `FuzzyMetricParams`, `FuzzyMemberships`, `fuzzyMemberships`, `FuzzyTerm`, `kFuzzyTerms` (swarm-core's `core/swarm-fuzzy-metric.h`, #3; its status is swarm-routing/swarm-core's since #231) | no protocol selects it; AntHocNet has no fuzzy metric to port; its A/B (#132) waits for one |
 | `IslLinkMonitor` (`model/swarm-isl-link-monitor.h`, #4), with its attributes and trace sources | no protocol uses it; AntHocNet's own ISL code, where it came from, may adopt it after its port |
 | `SwarmRoutingBase`'s `IslHelloSuppression` attribute, `OnLinkUp`, `BeaconSuppressed`, `IsLinkStateNeighbor` | the base API that only `IslLinkMonitor` drives |
+| `MobilityLocationProvider` (`model/swarm-mobility-location-provider.h`, #232) and `SwarmRoutingBase::Location()` | they adapt swarm-core's `ILocationProvider`, experimental in swarm-core; #293 recorded them as frozen, and #309 marked them before any release contained them |
 
 `LinkObservation::stability` is not experimental: it is a neutral field of
 the frozen observation (NaN, "no evidence", by default). `SwarmMonitorHelper`

@@ -105,8 +105,9 @@ BREAKING_FOOTER = re.compile(r"^BREAKING[ -]CHANGE:", re.M)
 EXPERIMENTAL_MARK = "experimental "
 EXPERIMENTAL = re.compile(
     r"^(swarm::core::(Fuzzy\w*|fuzzyMemberships|kFuzzyTerms)"
-    r"|ns3::IslLinkMonitor"
-    r"|ns3::SwarmRoutingBase::(IslHelloSuppression|BeaconSuppressed|IsLinkStateNeighbor|OnLinkUp))"
+    r"|ns3::(IslLinkMonitor|MobilityLocationProvider)"
+    r"|ns3::SwarmRoutingBase::(IslHelloSuppression|BeaconSuppressed|IsLinkStateNeighbor|OnLinkUp"
+    r"|Location))"
     r"(::|$)"
 )
 
@@ -1277,6 +1278,13 @@ def self_test() -> int:
             )
         unclosed = "```\nBREAKING CHANGE: inside an unclosed fence\n"
         assert len(findings(removed, removed, text, "feat: drop", unclosed)) == 1
+        # the location provider and its base accessor are experimental, the energy ones frozen (#309)
+        assert experimental("ns3::MobilityLocationProvider") and experimental(
+            "ns3::MobilityLocationProvider::pose"
+        )
+        assert experimental("ns3::SwarmRoutingBase::Location")
+        assert not experimental("ns3::SwarmRoutingBase::EnergyProvider")
+        assert not experimental("ns3::SwarmRoutingBase::LocationProvider")
         # an experimental item may go or change in any release; a frozen one made experimental may not
         no_exp = HEADER + "".join(f"{x}\n" for x in sorted(got) if "FuzzyThing" not in x)
         assert findings(no_exp, no_exp, text, "feat: drop", "") == []
