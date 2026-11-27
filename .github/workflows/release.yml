@@ -66,7 +66,7 @@ jobs:
     if: "${{ github.event_name != 'push' || contains(toJSON(github.event.commits.*.message), 'chore(release): bump version ') }}"
 # org-sync:end release-gate
     permissions: { contents: write, pull-requests: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@841a8f45da19e3ca543e9c59b552349cb48560ff # main@2026-11-27
+    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@4f6ed3217d05ebccd2418617fdcd99ab7869de8e # main@2026-11-27
     with:
       mode: ${{ inputs.mode }}   # empty on push: release
       increment: ${{ inputs.increment != 'auto' && inputs.increment || '' }}  # '' on push and for auto (swarm-routing/.github#211)
@@ -87,7 +87,7 @@ jobs:
     # a manual `publish` releases too, so it builds the image as well
     if: ${{ needs.release.outputs.mode == 'release' || needs.release.outputs.mode == 'publish' }}
     permissions: { contents: read, packages: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@841a8f45da19e3ca543e9c59b552349cb48560ff # main@2026-11-27
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@4f6ed3217d05ebccd2418617fdcd99ab7869de8e # main@2026-11-27
     with:
       modules: swarm-core=.
       image: swarm-adapter-ns3
