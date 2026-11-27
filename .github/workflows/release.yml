@@ -62,7 +62,7 @@ jobs:
     # Any commit of the push may be the bump (a merge queue batches them).
     if: "${{ github.event_name != 'push' || contains(toJSON(github.event.commits.*.message), 'chore(release): bump version ') }}"
     permissions: { contents: write, pull-requests: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@d59d29f9d136fa96587e7b3106af29f9c4e2c10e # main@2026-11-27
+    uses: swarm-routing/.github/.github/workflows/reusable-release.yml@bbb81f90c92b52dcb3ef0cfcdfdd655bef968391 # main@2026-11-27
     with:
       mode: ${{ inputs.mode }}   # empty on push: release
       increment: ${{ inputs.increment != 'auto' && inputs.increment || '' }}  # '' on push and for auto (swarm-routing/.github#211)
@@ -83,7 +83,7 @@ jobs:
     # a manual `publish` releases too, so it builds the image as well
     if: ${{ needs.release.outputs.mode == 'release' || needs.release.outputs.mode == 'publish' }}
     permissions: { contents: read, packages: write, id-token: write, attestations: write }
-    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@d59d29f9d136fa96587e7b3106af29f9c4e2c10e # main@2026-11-27
+    uses: swarm-routing/.github/.github/workflows/reusable-ns3-image.yml@bbb81f90c92b52dcb3ef0cfcdfdd655bef968391 # main@2026-11-27
     with:
       modules: swarm-core=.
       image: swarm-adapter-ns3
